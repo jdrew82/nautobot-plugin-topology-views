@@ -19,7 +19,7 @@ from nautobot_topology_views.utils import (
 )
 
 
-class RoleImage(ChangeLoggingMixin, ExportTemplatesMixin, WebhooksMixin):
+class RoleImage(BaseModel):
     class Meta:
         indexes = [
             models.Index(fields=["content_type", "object_id"]),
@@ -27,33 +27,34 @@ class RoleImage(ChangeLoggingMixin, ExportTemplatesMixin, WebhooksMixin):
 
     objects: "models.Manager[RoleImage]"
 
-    image = models.CharField("Path within the netbox static directory", max_length=255)
+    image = models.CharField("Path within the Nautobot static directory", max_length=255)
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField(null=True, blank=True)
+    object_id = models.UUIDField(null=True, blank=True)
+    model_role = GenericForeignKey(ct_field="content_type", fk_field="object_id")
 
-    __role: Optional[Role] = None
+    # __model_role: Optional[ModelRole] = None
 
-    @property
-    def role(self) -> Role:
-        if self.__role:
-            return self.__role
+    # @property
+    # def model_role(self) -> ModelRole:
+    #     if self.__model_role:
+    #         return self.__model_role
 
-        model_class = self.content_type.model_class()
+    #     model_class = self.content_type.model_class()
 
-        if not model_class:
-            raise ValueError(f"Invalid content type: {self.content_type}")
+    #     if not model_class:
+    #         raise ValueError(f"Invalid content type: {self.content_type}")
 
-        if model_class == DeviceRole:
-            device_role: DeviceRole = DeviceRole.objects.get(pk=self.object_id)
-            self.__role = Role(slug=device_role.slug, name=device_role.name)
-            return self.__role
+    #     if model_class == Role:
+    #         device_role: Role = Role.objects.get(pk=self.object_id)
+    #         self.__model_role = ModelRole(name=device_role.name)
+    #         return self.__model_role
 
-        self.__role = get_model_role(model_class)
-        return self.__role
+    #     self.__model_role = get_model_role(model_class)
+    #     return self.__model_role
 
     def __str__(self):
-        return f"{self.role} - {self.image}"
+        return f"{self.model_role} - {self.image}"
 
     def get_image(self) -> Path:
         """Get Icon
@@ -64,7 +65,7 @@ class RoleImage(ChangeLoggingMixin, ExportTemplatesMixin, WebhooksMixin):
         path = Path(settings.STATIC_ROOT) / self.image
 
         if not path.exists():
-            raise ValueError(f"{self.role} path '{path}' does not exists")
+            raise ValueError(f"{self.model_role} path '{path}' does not exists")
 
         return path
 
@@ -76,7 +77,7 @@ class RoleImage(ChangeLoggingMixin, ExportTemplatesMixin, WebhooksMixin):
 
         fallback is `STATIC_ROOT/nautobot_topology_views/img/role-unknown.png`
         """
-        if url := find_image_url(self.role.slug, dir):
+        if url := find_image_url(self.model_role.name, dir):
             return url
 
         # fallback to default role unknown image
@@ -89,11 +90,13 @@ class RoleImage(ChangeLoggingMixin, ExportTemplatesMixin, WebhooksMixin):
             return self.get_default_image(dir)
         return static(f"/{self.image}")
 
-class CoordinateGroup(NetBoxModel):
+
+class CoordinateGroup(BaseModel):
     """
-    A coordinate group is used to display the topology for a particular group. 
+    A coordinate group is used to display the topology for a particular group.
     This allows different visualizations with the same devices.
     """
+
     name = models.CharField(
         max_length=100,
         unique=True,
@@ -101,34 +104,36 @@ class CoordinateGroup(NetBoxModel):
 
     description = models.CharField(
         max_length=255,
-        blank = True,
+        blank=True,
     )
 
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('plugins:nautobot_topology_views:coordinategroup', args=[self.pk])
+        return reverse("plugins:nautobot_topology_views:coordinategroup", args=[self.pk])
 
-class Coordinate(NetBoxModel):
+
+class Coordinate(BaseModel):
     """
-    Coordinates are being used to place devices in a topology view onto a certain 
-    position. Devices belong to one or more coordinate groups. They have to 
+    Coordinates are being used to place devices in a topology view onto a certain
+    position. Devices belong to one or more coordinate groups. They have to
     be unique together.
     """
+
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
     group = models.ForeignKey(CoordinateGroup, on_delete=models.CASCADE)
-    
+
     x = models.IntegerField(
-        help_text='X-coordinate of the device (horizontal) on the canvas. '
-            'Smaller values correspond to a position further to the left on the monitor.',
+        help_text="X-coordinate of the device (horizontal) on the canvas. "
+        "Smaller values correspond to a position further to the left on the monitor.",
     )
     y = models.IntegerField(
-        help_text='Y-coordinate of the device (vertical) on the canvas. '
-            'Smaller values correspond to a position further up on the monitor.',
+        help_text="Y-coordinate of the device (vertical) on the canvas. "
+        "Smaller values correspond to a position further up on the monitor.",
     )
 
     def get_or_create_default_group(group_id):
@@ -141,10 +146,10 @@ class Coordinate(NetBoxModel):
                 group_id = group.pk
             else:
                 group = CoordinateGroup(
-                    name="default", 
+                    name="default",
                     description="Automatically generated default group. If you delete "
-                        "this group, all default coordinates are gone for good but "
-                        "the group itself will be re-created."
+                    "this group, all default coordinates are gone for good but "
+                    "the group itself will be re-created.",
                 )
                 group.save()
                 group_id = group.pk
@@ -153,31 +158,33 @@ class Coordinate(NetBoxModel):
         return group_id
 
     class Meta:
-        ordering = ['group', 'device']
-        unique_together = ('device', 'group')
+        ordering = ["group", "device"]
+        unique_together = ("device", "group")
 
     def __str__(self):
-        return f'{self.x};{self.y}'
+        return f"{self.x};{self.y}"
 
     def get_absolute_url(self):
-        return reverse('plugins:nautobot_topology_views:coordinate', args=[self.pk])
+        return reverse("plugins:nautobot_topology_views:coordinate", args=[self.pk])
 
-class CircuitCoordinate(NetBoxModel):
+
+class CircuitCoordinate(BaseModel):
     """
-    Coordinates are being used to place devices in a topology view onto a certain 
-    position. Devices belong to one or more coordinate groups. They have to 
+    Coordinates are being used to place devices in a topology view onto a certain
+    position. Devices belong to one or more coordinate groups. They have to
     be unique together.
     """
+
     device = models.ForeignKey(Circuit, on_delete=models.CASCADE)
     group = models.ForeignKey(CoordinateGroup, on_delete=models.CASCADE)
-    
+
     x = models.IntegerField(
-        help_text='X-coordinate of the device (horizontal) on the canvas. '
-            'Smaller values correspond to a position further to the left on the monitor.',
+        help_text="X-coordinate of the device (horizontal) on the canvas. "
+        "Smaller values correspond to a position further to the left on the monitor.",
     )
     y = models.IntegerField(
-        help_text='Y-coordinate of the device (vertical) on the canvas. '
-            'Smaller values correspond to a position further up on the monitor.',
+        help_text="Y-coordinate of the device (vertical) on the canvas. "
+        "Smaller values correspond to a position further up on the monitor.",
     )
 
     def get_or_create_default_group(group_id):
@@ -190,10 +197,10 @@ class CircuitCoordinate(NetBoxModel):
                 group_id = group.pk
             else:
                 group = CoordinateGroup(
-                    name="default", 
+                    name="default",
                     description="Automatically generated default group. If you delete "
-                        "this group, all default coordinates are gone for good but "
-                        "the group itself will be re-created."
+                    "this group, all default coordinates are gone for good but "
+                    "the group itself will be re-created.",
                 )
                 group.save()
                 group_id = group.pk
@@ -202,31 +209,33 @@ class CircuitCoordinate(NetBoxModel):
         return group_id
 
     class Meta:
-        ordering = ['group', 'device']
-        unique_together = ('device', 'group')
+        ordering = ["group", "device"]
+        unique_together = ("device", "group")
 
     def __str__(self):
-        return f'{self.x};{self.y}'
+        return f"{self.x};{self.y}"
 
     def get_absolute_url(self):
-        return reverse('plugins:nautobot_topology_views:circuitcoordinate', args=[self.pk])
+        return reverse("plugins:nautobot_topology_views:circuitcoordinate", args=[self.pk])
 
-class PowerPanelCoordinate(NetBoxModel):
+
+class PowerPanelCoordinate(BaseModel):
     """
-    Coordinates are being used to place devices in a topology view onto a certain 
-    position. Devices belong to one or more coordinate groups. They have to 
+    Coordinates are being used to place devices in a topology view onto a certain
+    position. Devices belong to one or more coordinate groups. They have to
     be unique together.
     """
+
     device = models.ForeignKey(PowerPanel, on_delete=models.CASCADE)
     group = models.ForeignKey(CoordinateGroup, on_delete=models.CASCADE)
-    
+
     x = models.IntegerField(
-        help_text='X-coordinate of the device (horizontal) on the canvas. '
-            'Smaller values correspond to a position further to the left on the monitor.',
+        help_text="X-coordinate of the device (horizontal) on the canvas. "
+        "Smaller values correspond to a position further to the left on the monitor.",
     )
     y = models.IntegerField(
-        help_text='Y-coordinate of the device (vertical) on the canvas. '
-            'Smaller values correspond to a position further up on the monitor.',
+        help_text="Y-coordinate of the device (vertical) on the canvas. "
+        "Smaller values correspond to a position further up on the monitor.",
     )
 
     def get_or_create_default_group(group_id):
@@ -239,10 +248,10 @@ class PowerPanelCoordinate(NetBoxModel):
                 group_id = group.pk
             else:
                 group = CoordinateGroup(
-                    name="default", 
+                    name="default",
                     description="Automatically generated default group. If you delete "
-                        "this group, all default coordinates are gone for good but "
-                        "the group itself will be re-created."
+                    "this group, all default coordinates are gone for good but "
+                    "the group itself will be re-created.",
                 )
                 group.save()
                 group_id = group.pk
@@ -251,31 +260,33 @@ class PowerPanelCoordinate(NetBoxModel):
         return group_id
 
     class Meta:
-        ordering = ['group', 'device']
-        unique_together = ('device', 'group')
+        ordering = ["group", "device"]
+        unique_together = ("device", "group")
 
     def __str__(self):
-        return f'{self.x};{self.y}'
+        return f"{self.x};{self.y}"
 
     def get_absolute_url(self):
-        return reverse('plugins:nautobot_topology_views:powerpanelcoordinate', args=[self.pk])
+        return reverse("plugins:nautobot_topology_views:powerpanelcoordinate", args=[self.pk])
 
-class PowerFeedCoordinate(NetBoxModel):
+
+class PowerFeedCoordinate(BaseModel):
     """
-    Coordinates are being used to place devices in a topology view onto a certain 
-    position. Devices belong to one or more coordinate groups. They have to 
+    Coordinates are being used to place devices in a topology view onto a certain
+    position. Devices belong to one or more coordinate groups. They have to
     be unique together.
     """
+
     device = models.ForeignKey(PowerFeed, on_delete=models.CASCADE)
     group = models.ForeignKey(CoordinateGroup, on_delete=models.CASCADE)
-    
+
     x = models.IntegerField(
-        help_text='X-coordinate of the device (horizontal) on the canvas. '
-            'Smaller values correspond to a position further to the left on the monitor.',
+        help_text="X-coordinate of the device (horizontal) on the canvas. "
+        "Smaller values correspond to a position further to the left on the monitor.",
     )
     y = models.IntegerField(
-        help_text='Y-coordinate of the device (vertical) on the canvas. '
-            'Smaller values correspond to a position further up on the monitor.',
+        help_text="Y-coordinate of the device (vertical) on the canvas. "
+        "Smaller values correspond to a position further up on the monitor.",
     )
 
     def get_or_create_default_group(group_id):
@@ -288,10 +299,10 @@ class PowerFeedCoordinate(NetBoxModel):
                 group_id = group.pk
             else:
                 group = CoordinateGroup(
-                    name="default", 
+                    name="default",
                     description="Automatically generated default group. If you delete "
-                        "this group, all default coordinates are gone for good but "
-                        "the group itself will be re-created."
+                    "this group, all default coordinates are gone for good but "
+                    "the group itself will be re-created.",
                 )
                 group.save()
                 group_id = group.pk
@@ -300,76 +311,53 @@ class PowerFeedCoordinate(NetBoxModel):
         return group_id
 
     class Meta:
-        ordering = ['group', 'device']
-        unique_together = ('device', 'group')
+        ordering = ["group", "device"]
+        unique_together = ("device", "group")
 
     def __str__(self):
-        return f'{self.x};{self.y}'
+        return f"{self.x};{self.y}"
 
     def get_absolute_url(self):
-        return reverse('plugins:nautobot_topology_views:powerfeedcoordinate', args=[self.pk])
+        return reverse("plugins:nautobot_topology_views:powerfeedcoordinate", args=[self.pk])
 
-class IndividualOptions(NetBoxModel):
+
+class IndividualOptions(BaseModel):
     CHOICES = (
-        ('interface', 'interface'),
-        ('front port', 'front port'),
-        ('rear port', 'rear port'),
-        ('power outlet', 'power outlet'),
-        ('power port', 'power port'),
-        ('console port', 'console port'),
-        ('console server port', 'console server port'),
+        ("interface", "interface"),
+        ("front port", "front port"),
+        ("rear port", "rear port"),
+        ("power outlet", "power outlet"),
+        ("power port", "power port"),
+        ("console port", "console port"),
+        ("console server port", "console server port"),
     )
 
-    user_id = models.IntegerField(
-        null=True,
-        unique=True
-    )
+    user_id = models.UUIDField(null=True, unique=True)
     ignore_cable_type = models.CharField(
-        max_length = 255,
-        blank = True,
+        max_length=255,
+        blank=True,
     )
     preselected_device_roles = models.ManyToManyField(
-        to='dcim.DeviceRole',
-        related_name='+',
+        to="extras.Role",
+        related_name="+",
         blank=True,
-        db_table='nautobot_topology_views_individualoptions_preselected_device',
+        db_table="nautobot_topology_views_individualoptions_preselected_device",
     )
     preselected_tags = models.ManyToManyField(
-        to='extras.Tag',
-        related_name='+',
+        to="extras.Tag",
+        related_name="+",
         blank=True,
-        db_table='nautobot_topology_views_individualoptions_preselected_tag',
+        db_table="nautobot_topology_views_individualoptions_preselected_tag",
     )
-    save_coords = models.BooleanField(
-        default=False
-    )
-    show_unconnected = models.BooleanField(
-        default=False
-    )
-    show_cables = models.BooleanField(
-        default=False
-    )
-    show_logical_connections = models.BooleanField(
-        default=False
-    )
-    show_single_cable_logical_conns = models.BooleanField(
-        default=False
-    )
-    show_neighbors = models.BooleanField(
-        default=False
-    )
-    show_circuit = models.BooleanField(
-        default=False
-    )
-    show_power = models.BooleanField(
-        default=False
-    )
-    show_wireless = models.BooleanField(
-        default=False
-    )
-    draw_default_layout = models.BooleanField(
-        default=False
-    )
+    save_coords = models.BooleanField(default=False)
+    show_unconnected = models.BooleanField(default=False)
+    show_cables = models.BooleanField(default=False)
+    show_logical_connections = models.BooleanField(default=False)
+    show_single_cable_logical_conns = models.BooleanField(default=False)
+    show_neighbors = models.BooleanField(default=False)
+    show_circuit = models.BooleanField(default=False)
+    show_power = models.BooleanField(default=False)
+    draw_default_layout = models.BooleanField(default=False)
 
     def __str___(self):
         return f"{self.user_id}"
