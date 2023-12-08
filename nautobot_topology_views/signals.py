@@ -5,7 +5,8 @@ from nautobot.extras.models import Role
 from nautobot_topology_views.models import RoleImage
 
 
-@receiver(pre_delete, sender=DeviceRole, dispatch_uid="delete_hanging_role_image")
-def delete_hanging_role_image(sender: Type[DeviceRole], instance: DeviceRole, **kwargs):
+def nautobot_database_ready_callback(  # pylint: disable=unused-argument
+    sender: Type[Role], *, apps, instance: Role, **kwargs
+):
     ct = ContentType.objects.get_for_model(sender)
     RoleImage.objects.filter(content_type=ct, object_id=instance.id).delete()
