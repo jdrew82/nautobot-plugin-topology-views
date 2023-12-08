@@ -1,25 +1,38 @@
 from typing import Dict
 import sys
 
-from circuits.models import Circuit
-from dcim.models import Device, DeviceRole, PowerFeed, PowerPanel
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse, JsonResponse
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
+
+from nautobot.circuits.models import Circuit
+from nautobot.dcim.models import Device, PowerFeed, PowerPanel
+from nautobot.extras.api.views import NautobotModelViewSet
+from nautobot.extras.models import Role
 
 from nautobot_topology_views.api.serializers import (
     RoleImageSerializer,
     TopologyDummySerializer,
 )
 import nautobot_topology_views.models
-from nautobot_topology_views.models import RoleImage, IndividualOptions, CoordinateGroup, Coordinate, CircuitCoordinate, PowerPanelCoordinate, PowerFeedCoordinate
+from nautobot_topology_views.models import (
+    RoleImage,
+    IndividualOptions,
+    CoordinateGroup,
+    Coordinate,
+    CircuitCoordinate,
+    PowerPanelCoordinate,
+    PowerFeedCoordinate,
+)
 from nautobot_topology_views.views import get_topology_data
 from nautobot_topology_views.utils import get_image_from_url, export_data_to_xml, get_query_settings
 from nautobot_topology_views.filters import DeviceFilterSet
+
 
 class SaveCoordsViewSet(PermissionRequiredMixin, ReadOnlyModelViewSet):
     permission_required = 'nautobot_topology_views.change_coordinate'

@@ -1,8 +1,15 @@
-from dcim.models import Device, DeviceRole
-from rest_framework.serializers import ModelSerializer
-from netbox.api.serializers import NetBoxModelSerializer
+from nautobot.dcim.models import Device
+from nautobot.core.api.serializers import ValidatedModelSerializer
 
-from nautobot_topology_views.models import RoleImage, IndividualOptions, CoordinateGroup, Coordinate, CircuitCoordinate, PowerPanelCoordinate, PowerFeedCoordinate
+from nautobot_topology_views.models import (
+    RoleImage,
+    IndividualOptions,
+    CoordinateGroup,
+    Coordinate,
+    CircuitCoordinate,
+    PowerPanelCoordinate,
+    PowerFeedCoordinate,
+)
 
 
 class TopologyDummySerializer(ModelSerializer):
