@@ -1,8 +1,8 @@
-from netbox.api.routers import NetBoxRouter
+from nautobot.core.api.routers import OrderedDefaultRouter
 
 from nautobot_topology_views.api import views
 
-router = NetBoxRouter()
+router = OrderedDefaultRouter()
 
 router.register("save-coords", views.SaveCoordsViewSet)
 router.register("images", views.SaveRoleImageViewSet)
