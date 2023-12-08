@@ -1,10 +1,7 @@
 from typing import Type
 
-from dcim.models import DeviceRole
 from django.contrib.contenttypes.models import ContentType
-from django.db.models.signals import pre_delete
-from django.dispatch import receiver
-
+from nautobot.extras.models import Role
 from nautobot_topology_views.models import RoleImage
 
 

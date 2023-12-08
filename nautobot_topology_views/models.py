@@ -1,27 +1,20 @@
 from pathlib import Path
-from typing import Optional
 
-from circuits.models import Circuit
-from dcim.models import Device, DeviceRole, PowerPanel, PowerFeed
-from extras.models import Tag
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.templatetags.static import static
 from django.urls import reverse
-from netbox.models import NetBoxModel
-from netbox.models.features import (
-    ChangeLoggingMixin,
-    ExportTemplatesMixin,
-    WebhooksMixin,
-)
+
+from nautobot.apps.models import BaseModel
+from nautobot.circuits.models import Circuit
+from nautobot.dcim.models import Device, PowerPanel, PowerFeed
 
 from nautobot_topology_views.utils import (
     CONF_IMAGE_DIR,
     IMAGE_DIR,
-    Role,
     find_image_url,
-    get_model_role,
     image_static_url,
 )
 

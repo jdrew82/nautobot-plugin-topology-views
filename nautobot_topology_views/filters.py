@@ -1,14 +1,29 @@
 import django_filters
-from circuits.models import Circuit
-from dcim.choices import DeviceStatusChoices
-from dcim.models import Device, DeviceRole, Location, Rack, Region, Site, SiteGroup, Manufacturer, DeviceType, Platform, PowerPanel, PowerFeed
 from django.db.models import Q
-from extras.filtersets import LocalConfigContextFilterSet
-from extras.models import ConfigTemplate
-from netbox.filtersets import NetBoxModelFilterSet
-from tenancy.filtersets import TenancyFilterSet, ContactModelFilterSet
-from utilities.filters import TreeNodeMultipleChoiceFilter, MultiValueCharFilter, MultiValueMACAddressFilter
-from nautobot_topology_views.models import CoordinateGroup, Coordinate, CircuitCoordinate, PowerPanelCoordinate, PowerFeedCoordinate
+from nautobot.circuits.models import Circuit
+from nautobot.dcim.choices import DeviceStatusChoices
+from nautobot.dcim.models import (
+    Device,
+    Location,
+    Rack,
+    Manufacturer,
+    DeviceType,
+    Platform,
+    PowerPanel,
+    PowerFeed,
+)
+from nautobot.extras.filters import NautobotFilterSet
+from nautobot.extras.models import Role
+from nautobot.tenancy.filters import TenancyFilterSet
+from nautobot.core.filters import TreeNodeMultipleChoiceFilter, MultiValueCharFilter, MultiValueMACAddressFilter
+from nautobot_topology_views.models import (
+    CoordinateGroup,
+    Coordinate,
+    CircuitCoordinate,
+    PowerPanelCoordinate,
+    PowerFeedCoordinate,
+)
+
 
 class DeviceFilterSet(NetBoxModelFilterSet, TenancyFilterSet, ContactModelFilterSet, LocalConfigContextFilterSet):
     q = django_filters.CharFilter(

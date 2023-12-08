@@ -1,28 +1,26 @@
-from cProfile import label
-import imp
 from django import forms
 from django.conf import settings
 
 from django.utils.translation import gettext as _
 
-from circuits.models import Circuit
-from dcim.models import Device, Site, SiteGroup, Region, DeviceRole, Location, Rack, Manufacturer, DeviceType, Platform, PowerPanel, PowerFeed
+from nautobot.circuits.models import Circuit
+from nautobot.dcim.models import Device, Location, Rack, Manufacturer, DeviceType, Platform, PowerPanel, PowerFeed
+from nautobot.dcim.choices import DeviceStatusChoices
+from nautobot.extras.models import Role
+from nautobot.tenancy.forms import TenancyFilterForm
+from nautobot.extras.forms.base import NautobotFilterForm, NautobotModelForm
+from nautobot.core.forms import BOOLEAN_WITH_BLANK_CHOICES
+from nautobot.core.forms.fields import TagFilterField, DynamicModelMultipleChoiceField
 
-from django import forms
-from dcim.choices import DeviceStatusChoices, DeviceAirflowChoices
-from tenancy.models import TenantGroup, Tenant
-from extras.models import ConfigTemplate
-from extras.forms import LocalConfigContextFilterForm
-from tenancy.forms import ContactModelFilterForm, TenancyFilterForm
-from django.conf import settings
-from netbox.forms import NetBoxModelFilterSetForm, NetBoxModelForm, NetBoxModelImportForm
-from utilities.forms import BOOLEAN_WITH_BLANK_CHOICES, add_blank_choice
-from utilities.forms.fields import (
-    TagFilterField,
-    DynamicModelMultipleChoiceField
+from nautobot_topology_views.models import (
+    IndividualOptions,
+    CoordinateGroup,
+    Coordinate,
+    CircuitCoordinate,
+    PowerPanelCoordinate,
+    PowerFeedCoordinate,
 )
 
-from nautobot_topology_views.models import IndividualOptions, CoordinateGroup, Coordinate, CircuitCoordinate, PowerPanelCoordinate, PowerFeedCoordinate
 
 class DeviceFilterForm(
     LocalConfigContextFilterForm,
