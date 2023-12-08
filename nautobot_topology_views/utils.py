@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Type
 import base64
 import xml.dom.minidom
-
-import sys
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.db.models import Model

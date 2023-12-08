@@ -1,7 +1,6 @@
 from django.urls import path
-from django.views.generic.base import RedirectView
-from netbox.views.generic import ObjectChangeLogView
-from . import models, views
+from nautobot.extras.views import ObjectChangeLogView
+from nautobot_topology_views import models, views
 
 # Define a list of URL patterns to be imported by NetBox. Each pattern maps a URL to
 # a specific view so that it can be accessed by users.

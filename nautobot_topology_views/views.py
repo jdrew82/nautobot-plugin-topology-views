@@ -4,20 +4,6 @@ from typing import DefaultDict, Dict, Optional, Union
 import time
 from itertools import chain
 
-from utilities.htmx import is_htmx
-from circuits.models import Circuit, CircuitTermination, ProviderNetwork
-from dcim.models import (
-    Cable,
-    CableTermination,
-    Device,
-    device_components,
-    DeviceRole,
-    FrontPort,
-    Interface,
-    PowerFeed,
-    PowerPanel,
-    RearPort,
-)
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -27,46 +13,70 @@ from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponseRedirect, QueryDict
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
-from extras.models import Tag
-from wireless.models import WirelessLink
-from netbox.views.generic import (
-    ObjectView, 
-    ObjectListView, 
-    ObjectEditView, 
-    ObjectDeleteView, 
-    ObjectChangeLogView, 
-    BulkImportView
+
+from nautobot_topology_views.utils import is_htmx
+from nautobot.circuits.models import Circuit, CircuitTermination, ProviderNetwork
+from nautobot.dcim.models import (
+    Cable,
+    CableTermination,
+    Device,
+    device_components,
+    FrontPort,
+    Interface,
+    PowerFeed,
+    PowerPanel,
+    RearPort,
 )
-from nautobot_topology_views.filters import DeviceFilterSet, CoordinatesFilterSet, CircuitCoordinatesFilterSet, PowerPanelCoordinatesFilterSet, PowerFeedCoordinatesFilterSet
+from nautobot.extras.models import Role
+from nautobot.apps.views import (
+    ObjectView,
+    ObjectListView,
+    ObjectEditView,
+    ObjectDeleteView,
+    BulkImportView,
+)
+from nautobot_topology_views.filters import (
+    DeviceFilterSet,
+    CoordinatesFilterSet,
+    CircuitCoordinatesFilterSet,
+    PowerPanelCoordinatesFilterSet,
+    PowerFeedCoordinatesFilterSet,
+)
 from nautobot_topology_views.forms import (
-    DeviceFilterForm, 
-    IndividualOptionsForm, 
-    CoordinateGroupsForm, 
-    CircuitCoordinatesForm, 
-    CircuitCoordinatesFilterForm, 
+    DeviceFilterForm,
+    IndividualOptionsForm,
+    CoordinateGroupsForm,
+    CircuitCoordinatesForm,
+    CircuitCoordinatesFilterForm,
     CircuitCoordinatesImportForm,
-    PowerPanelCoordinatesForm, 
-    PowerPanelCoordinatesFilterForm, 
+    PowerPanelCoordinatesForm,
+    PowerPanelCoordinatesFilterForm,
     PowerPanelCoordinatesImportForm,
-    PowerFeedCoordinatesForm, 
-    PowerFeedCoordinatesFilterForm, 
+    PowerFeedCoordinatesForm,
+    PowerFeedCoordinatesFilterForm,
     PowerFeedCoordinatesImportForm,
-    CoordinatesForm, 
-    CoordinatesFilterForm, 
+    CoordinatesForm,
+    CoordinatesFilterForm,
     CoordinateGroupsImportForm,
-    CoordinatesImportForm
+    CoordinatesImportForm,
 )
 import nautobot_topology_views.models
 from nautobot_topology_views.models import (
-    RoleImage, 
-    IndividualOptions, 
-    CoordinateGroup, 
-    Coordinate, 
-    CircuitCoordinate, 
-    PowerPanelCoordinate, 
+    RoleImage,
+    IndividualOptions,
+    CoordinateGroup,
+    Coordinate,
+    CircuitCoordinate,
+    PowerPanelCoordinate,
     PowerFeedCoordinate,
 )
-from nautobot_topology_views.tables import CoordinateGroupListTable, CoordinateListTable, CircuitCoordinateListTable, PowerPanelCoordinateListTable, PowerFeedCoordinateListTable
+from nautobot_topology_views.tables import (
+    CoordinateGroupListTable,
+    CoordinateListTable,
+    CircuitCoordinateListTable,
+    PowerPanelCoordinateListTable,
+    PowerFeedCoordinateListTable,
+)
 from nautobot_topology_views.utils import (
     CONF_IMAGE_DIR,
     find_image_url,
@@ -75,9 +85,8 @@ from nautobot_topology_views.utils import (
     image_static_url,
     LinePattern,
     get_query_settings,
-    IMAGE_FILETYPES
+    IMAGE_FILETYPES,
 )
-
 
 
 def get_image_for_entity(entity: Union[Device, Circuit, PowerPanel, PowerFeed]):

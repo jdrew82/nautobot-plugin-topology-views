@@ -1,7 +1,14 @@
 import django_tables2 as tables
 
-from netbox.tables import NetBoxTable, ChoiceFieldColumn
-from nautobot_topology_views.models import CoordinateGroup, Coordinate, CircuitCoordinate, PowerPanelCoordinate, PowerFeedCoordinate
+from nautobot.apps.tables import BaseTable
+from nautobot_topology_views.models import (
+    CoordinateGroup,
+    Coordinate,
+    CircuitCoordinate,
+    PowerPanelCoordinate,
+    PowerFeedCoordinate,
+)
+
 
 class CoordinateGroupListTable(NetBoxTable):
     name = tables.Column(

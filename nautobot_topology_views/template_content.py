@@ -1,5 +1,4 @@
-
-from extras.plugins import PluginTemplateExtension
+from nautobot.extras.plugins import PluginTemplateExtension
 from django.conf import settings
 from packaging import version
 
