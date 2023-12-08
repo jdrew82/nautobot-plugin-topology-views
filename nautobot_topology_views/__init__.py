@@ -23,6 +23,7 @@ class NautobotTopologyViewsConfig(NautobotAppConfig):
         "always_save_coordinates": False,
     }
     caching_config = {}
+    searchable_models = ["coordinate", "coordinategroup"]
 
 
 config = NautobotTopologyViewsConfig  # pylint:disable=invalid-name
