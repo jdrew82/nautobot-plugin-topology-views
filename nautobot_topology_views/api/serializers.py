@@ -12,49 +12,60 @@ from nautobot_topology_views.models import (
 )
 
 
-class TopologyDummySerializer(ModelSerializer):
+class TopologyDummySerializer(ValidatedModelSerializer):
     class Meta:
         model = Device
         fields = ("id", "name")
 
 
-class RoleImageSerializer(ModelSerializer):
+class RoleImageSerializer(ValidatedModelSerializer):
     class Meta:
         model = RoleImage
-        fields = ("role", "image")
+        fields = ("content_type", "model_role", "image")
 
 
-class DeviceRoleSerializer(ModelSerializer):
-    class Meta:
-        model = DeviceRole
-        fields = ("name", "slug", "color", "vm_role", "description")
-
-class CoordinateGroupSerializer(NetBoxModelSerializer):
+class CoordinateGroupSerializer(ValidatedModelSerializer):
     class Meta:
         model = CoordinateGroup
         fields = ("name", "description")
 
-class CoordinateSerializer(NetBoxModelSerializer):
+
+class CoordinateSerializer(ValidatedModelSerializer):
     class Meta:
         model = Coordinate
         fields = ("x", "y")
 
-class CircuitCoordinateSerializer(NetBoxModelSerializer):
+
+class CircuitCoordinateSerializer(ValidatedModelSerializer):
     class Meta:
         model = CircuitCoordinate
         fields = ("x", "y")
 
-class PowerPanelCoordinateSerializer(NetBoxModelSerializer):
+
+class PowerPanelCoordinateSerializer(ValidatedModelSerializer):
     class Meta:
         model = PowerPanelCoordinate
         fields = ("x", "y")
 
-class PowerFeedCoordinateSerializer(NetBoxModelSerializer):
+
+class PowerFeedCoordinateSerializer(ValidatedModelSerializer):
     class Meta:
         model = PowerFeedCoordinate
         fields = ("x", "y")
 
-class IndividualOptionsSerializer(NetBoxModelSerializer):
+
+class IndividualOptionsSerializer(ValidatedModelSerializer):
     class Meta:
         model = IndividualOptions
-        fields = ("ignore_cable_type", "save_coords", "show_unconnected", "show_cables", "show_logical_connections", "show_single_cable_logical_conns", "show_neighbors", "show_circuit", "show_power", "show_wireless", "draw_default_layout")
+        fields = (
+            "ignore_cable_type",
+            "save_coords",
+            "show_unconnected",
+            "show_cables",
+            "show_logical_connections",
+            "show_single_cable_logical_conns",
+            "show_neighbors",
+            "show_circuit",
+            "show_power",
+            "draw_default_layout",
+        )

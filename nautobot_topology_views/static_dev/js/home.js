@@ -16,7 +16,7 @@ const options = {
             multi: 'md',
             face: 'helvetica',
             color:
-                document.documentElement.dataset.netboxColorMode === 'dark'
+                document.documentElement.dataset.nautobotColorMode === 'dark'
                     ? '#fff'
                     : '#000'
         }
@@ -208,17 +208,17 @@ const observer = new MutationObserver((mutations) =>
         if (
             !graph ||
             mutation.type !== 'attributes' ||
-            mutation.attributeName !== 'data-netbox-color-mode' ||
+            mutation.attributeName !== 'data-nautobot-color-mode' ||
             !(mutation.target instanceof HTMLElement)
         )
             return
-        const { netboxColorMode } = mutation.target.dataset
-        options.nodes.font.color = netboxColorMode === 'dark' ? '#fff' : '#000'
+        const { nautobotColorMode } = mutation.target.dataset
+        options.nodes.font.color = nautobotColorMode === 'dark' ? '#fff' : '#000'
         graph.setOptions(options)
     })
 )
 
 observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['data-netbox-color-mode']
+    attributeFilter: ['data-nautobot-color-mode']
 })
