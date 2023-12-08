@@ -25,56 +25,36 @@ from nautobot_topology_views.models import (
 )
 
 
-class DeviceFilterSet(NetBoxModelFilterSet, TenancyFilterSet, ContactModelFilterSet, LocalConfigContextFilterSet):
+class DeviceFilterSet(NautobotFilterSet, TenancyFilterSet):
     q = django_filters.CharFilter(
         method="search",
         label="Search",
     )
-    manufacturer_id = django_filters.ModelMultipleChoiceFilter(
-        field_name='device_type__manufacturer',
-        queryset=Manufacturer.objects.all(),
-        label="Manufacturer (ID)",
-    )
     manufacturer = django_filters.ModelMultipleChoiceFilter(
-        field_name='device_type__manufacturer__slug',
+        field_name="device_type__manufacturer",
         queryset=Manufacturer.objects.all(),
-        to_field_name='slug',
-        label="Manufacturer (slug)",
+        to_field_name="name",
+        label="Manufacturer",
     )
-    device_type_id = django_filters.ModelMultipleChoiceFilter(
+    device_type = django_filters.ModelMultipleChoiceFilter(
         queryset=DeviceType.objects.all(),
-        label="Device type (ID)",
+        to_field_name="name",
+        label="DeviceType",
     )
     role_id = django_filters.ModelMultipleChoiceFilter(
         field_name="role_id",
-        queryset=DeviceRole.objects.all(),
+        queryset=Role.objects.all(),
         label="Role (ID)",
     )
     platform_id = django_filters.ModelMultipleChoiceFilter(
         queryset=Platform.objects.all(),
         label="Platform (ID)",
     )
-    region_id = TreeNodeMultipleChoiceFilter(
-        queryset=Region.objects.all(),
-        field_name="site__region",
-        lookup_expr="in",
-        label="Region (ID)",
-    )
-    site_group_id = TreeNodeMultipleChoiceFilter(
-        queryset=SiteGroup.objects.all(),
-        field_name="site__group",
-        lookup_expr="in",
-        label="Site Group (ID)",
-    )
-    site_id = django_filters.ModelMultipleChoiceFilter(
-        queryset=Site.objects.all(),
-        label="Site (ID)",
-    )
     location_id = TreeNodeMultipleChoiceFilter(
         queryset=Location.objects.all(),
         field_name="location",
         lookup_expr="in",
-        label="Location (ID)",
+        label="Location",
     )
     rack_id = django_filters.ModelMultipleChoiceFilter(
         queryset=Rack.objects.all(),
@@ -86,56 +66,50 @@ class DeviceFilterSet(NetBoxModelFilterSet, TenancyFilterSet, ContactModelFilter
         null_value=None,
     )
     mac_address = MultiValueMACAddressFilter(
-        field_name='interfaces__mac_address',
+        field_name="interfaces__mac_address",
         label="MAC address",
     )
-    serial = MultiValueCharFilter(
-        lookup_expr='iexact'
-    )
+    serial = MultiValueCharFilter(lookup_expr="iexact")
     console_ports = django_filters.BooleanFilter(
-        method='_console_ports',
+        method="_console_ports",
         label="Has console ports",
     )
     console_server_ports = django_filters.BooleanFilter(
-        method='_console_server_ports',
+        method="_console_server_ports",
         label="Has console server ports",
     )
     power_ports = django_filters.BooleanFilter(
-        method='_power_ports',
+        method="_power_ports",
         label="Has power ports",
     )
     power_outlets = django_filters.BooleanFilter(
-        method='_power_outlets',
+        method="_power_outlets",
         label="Has power outlets",
     )
     interfaces = django_filters.BooleanFilter(
-        method='_interfaces',
+        method="_interfaces",
         label="Has interfaces",
     )
     pass_through_ports = django_filters.BooleanFilter(
-        method='_pass_through_ports',
+        method="_pass_through_ports",
         label="Has pass-through ports",
     )
-    config_template_id = django_filters.ModelMultipleChoiceFilter(
-        queryset=ConfigTemplate.objects.all(),
-        label="Config template (ID)",
-    )
     has_primary_ip = django_filters.BooleanFilter(
-        method='_has_primary_ip',
+        method="_has_primary_ip",
         label="Has a primary IP",
     )
     has_oob_ip = django_filters.BooleanFilter(
-        method='_has_oob_ip',
+        method="_has_oob_ip",
         label="Has an out-of-band IP",
     )
     virtual_chassis_member = django_filters.BooleanFilter(
-        method='_virtual_chassis_member',
+        method="_virtual_chassis_member",
         label="Is a virtual chassis member",
     )
 
     class Meta:
         model = Device
-        fields = ["id", "name", "asset_tag", "airflow"]
+        fields = ["id", "name", "asset_tag"]
 
     def search(self, queryset, name, value):
         """Perform the filtered search."""
@@ -160,10 +134,7 @@ class DeviceFilterSet(NetBoxModelFilterSet, TenancyFilterSet, ContactModelFilter
         return queryset.exclude(interfaces__isnull=value)
 
     def _pass_through_ports(self, queryset, name, value):
-        return queryset.exclude(
-            frontports__isnull=value,
-            rearports__isnull=value
-        )
+        return queryset.exclude(frontports__isnull=value, rearports__isnull=value)
 
     def _has_primary_ip(self, queryset, name, value):
         params = Q(primary_ip4__isnull=False) | Q(primary_ip6__isnull=False)
@@ -180,90 +151,82 @@ class DeviceFilterSet(NetBoxModelFilterSet, TenancyFilterSet, ContactModelFilter
     def _virtual_chassis_member(self, queryset, name, value):
         return queryset.exclude(virtual_chassis__isnull=value)
 
-class CircuitCoordinatesFilterSet(NetBoxModelFilterSet):
+
+class CircuitCoordinatesFilterSet(NautobotFilterSet):
     group = django_filters.ModelMultipleChoiceFilter(
-        queryset = CoordinateGroup.objects.all(),
+        queryset=CoordinateGroup.objects.all(),
     )
 
     device = django_filters.ModelMultipleChoiceFilter(
-        queryset = Circuit.objects.all(),
+        queryset=Circuit.objects.all(),
     )
 
     class Meta:
         model = CircuitCoordinate
-        fields = ['id', 'group', 'device', 'x', 'y']
+        fields = ["id", "group", "device", "x", "y"]
 
     def search(self, queryset, name, value):
         """Perform the filtered search."""
         if not value.strip():
             return queryset
-        return queryset.filter(
-            Q(group__name__icontains=value) |
-            Q(device__name__icontains=value)
-        )
+        return queryset.filter(Q(group__name__icontains=value) | Q(device__name__icontains=value))
 
-class PowerPanelCoordinatesFilterSet(NetBoxModelFilterSet):
+
+class PowerPanelCoordinatesFilterSet(NautobotFilterSet):
     group = django_filters.ModelMultipleChoiceFilter(
-        queryset = CoordinateGroup.objects.all(),
+        queryset=CoordinateGroup.objects.all(),
     )
 
     device = django_filters.ModelMultipleChoiceFilter(
-        queryset = PowerPanel.objects.all(),
+        queryset=PowerPanel.objects.all(),
     )
 
     class Meta:
         model = PowerPanelCoordinate
-        fields = ['id', 'group', 'device', 'x', 'y']
+        fields = ["id", "group", "device", "x", "y"]
 
     def search(self, queryset, name, value):
         """Perform the filtered search."""
         if not value.strip():
             return queryset
-        return queryset.filter(
-            Q(group__name__icontains=value) |
-            Q(device__name__icontains=value)
-        )
+        return queryset.filter(Q(group__name__icontains=value) | Q(device__name__icontains=value))
 
-class PowerFeedCoordinatesFilterSet(NetBoxModelFilterSet):
+
+class PowerFeedCoordinatesFilterSet(NautobotFilterSet):
     group = django_filters.ModelMultipleChoiceFilter(
-        queryset = CoordinateGroup.objects.all(),
+        queryset=CoordinateGroup.objects.all(),
     )
 
     device = django_filters.ModelMultipleChoiceFilter(
-        queryset = PowerFeed.objects.all(),
+        queryset=PowerFeed.objects.all(),
     )
 
     class Meta:
         model = PowerFeedCoordinate
-        fields = ['id', 'group', 'device', 'x', 'y']
+        fields = ["id", "group", "device", "x", "y"]
 
     def search(self, queryset, name, value):
         """Perform the filtered search."""
         if not value.strip():
             return queryset
-        return queryset.filter(
-            Q(group__name__icontains=value) |
-            Q(device__name__icontains=value)
-        )
+        return queryset.filter(Q(group__name__icontains=value) | Q(device__name__icontains=value))
 
-class CoordinatesFilterSet(NetBoxModelFilterSet):
+
+class CoordinatesFilterSet(NautobotFilterSet):
     group = django_filters.ModelMultipleChoiceFilter(
-        queryset = CoordinateGroup.objects.all(),
+        queryset=CoordinateGroup.objects.all(),
     )
 
     device = django_filters.ModelMultipleChoiceFilter(
-        queryset = Device.objects.all(),
+        queryset=Device.objects.all(),
     )
 
     class Meta:
         model = Coordinate
-        fields = ['id', 'group', 'device', 'x', 'y']
+        fields = ["id", "group", "device", "x", "y"]
 
     def search(self, queryset, name, value):
         """Perform the filtered search."""
         if not value.strip():
             return queryset
-        return queryset.filter(
-            Q(group__name__icontains=value) |
-            Q(device__name__icontains=value)
-        )
+        return queryset.filter(Q(group__name__icontains=value) | Q(device__name__icontains=value))
