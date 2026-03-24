@@ -6,7 +6,6 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.templatetags.static import static
 from django.urls import reverse
 from nautobot.apps.models import BaseModel
 from nautobot.circuits.models import Circuit
@@ -89,10 +88,11 @@ class RoleImage(BaseModel):
     def get_image_url(self, image_dir: Path = CONF_IMAGE_DIR) -> str:
         """Return static URL for the configured image, or a default role image."""
         try:
-            self.get_image()
+            path = self.get_image()
         except ValueError:
             return self.get_default_image(image_dir)
-        return static(f"/{self.image}")
+        # Never pass a leading "/" to static(); it breaks finders (SuspiciousFileOperation).
+        return image_static_url(path)
 
 
 class CoordinateGroup(BaseModel):

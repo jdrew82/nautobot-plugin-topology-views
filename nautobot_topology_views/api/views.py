@@ -1,33 +1,31 @@
 """REST API views for nautobot_topology_views."""
 
 from typing import Dict
-import sys
 
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse, JsonResponse
 from drf_spectacular.utils import extend_schema
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
-
 from nautobot.circuits.models import Circuit
 from nautobot.dcim.models import Device, PowerFeed, PowerPanel
 from nautobot.extras.api.views import NautobotModelViewSet
 from nautobot.extras.models import Role
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
 
+import nautobot_topology_views.models
 from nautobot_topology_views.api.serializers import (
     RoleImageSerializer,
     TopologyDummySerializer,
 )
-import nautobot_topology_views.models
-from nautobot_topology_views.models import RoleImage, CoordinateGroup
+from nautobot_topology_views.models import CoordinateGroup, RoleImage
+from nautobot_topology_views.utils import export_data_to_xml, get_image_from_url
 from nautobot_topology_views.views import (
     filtered_topology_devices_and_options,
     topology_data_from_request,
 )
-from nautobot_topology_views.utils import get_image_from_url, export_data_to_xml
 
 
 class SaveCoordsViewSet(PermissionRequiredMixin, ReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
@@ -144,23 +142,15 @@ class SaveRoleImageViewSet(NautobotModelViewSet):  # pylint: disable=too-many-an
         if not isinstance(request.data, dict):
             return JsonResponse({"status": "Missing or malformed request body"}, status=400)
 
-        if sys.version_info >= (3, 9, 0):
-            device_roles = {k: v.removeprefix(settings.STATIC_URL) for k, v in request.data.items() if k.isnumeric()}
-            content_type_ids = {
-                k[2:]: v.removeprefix(settings.STATIC_URL)
-                for k, v in request.data.items()
-                if k.startswith("ct") and k[2:].isnumeric()
-            }
-        else:
-            device_roles = {}
-            for k, v in request.data.items():
-                if k.isdigit() and v.startswith(settings.STATIC_URL):
-                    device_roles[k] = v[len(settings.STATIC_URL) :]
+        device_roles = {}
+        for k, v in request.data.items():
+            if k.isdigit() and v.startswith(settings.STATIC_URL):
+                device_roles[k] = v[len(settings.STATIC_URL) :]
 
-            content_type_ids = {}
-            for k, v in request.data.items():
-                if k.startswith("ct") and k[2:].isdigit() and v.startswith(settings.STATIC_URL):
-                    content_type_ids[k[2:]] = v[len(settings.STATIC_URL) :]
+        content_type_ids = {}
+        for k, v in request.data.items():
+            if k.startswith("ct") and k[2:].isdigit() and v.startswith(settings.STATIC_URL):
+                content_type_ids[k[2:]] = v[len(settings.STATIC_URL) :]
 
         roles: Dict[int, Role] = Role.objects.in_bulk(device_roles.keys())
         content_types: Dict[int, ContentType] = ContentType.objects.in_bulk(content_type_ids.keys())

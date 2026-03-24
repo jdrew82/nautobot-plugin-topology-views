@@ -3,7 +3,12 @@
 import django_filters
 from django.db.models import Q
 from nautobot.circuits.models import Circuit
-from nautobot.core.filters import MultiValueCharFilter, MultiValueMACAddressFilter, SearchFilter, TreeNodeMultipleChoiceFilter
+from nautobot.core.filters import (
+    MultiValueCharFilter,
+    MultiValueMACAddressFilter,
+    SearchFilter,
+    TreeNodeMultipleChoiceFilter,
+)
 from nautobot.dcim.choices import DeviceStatusChoices
 from nautobot.dcim.models import (
     Device,

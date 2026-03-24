@@ -54,9 +54,9 @@ from nautobot_topology_views.forms import (
     CircuitCoordinateFilterForm,
     CircuitCoordinatesForm,
     CircuitCoordinatesImportForm,
+    CoordinateFilterForm,
     CoordinateGroupsForm,
     CoordinateGroupsImportForm,
-    CoordinateFilterForm,
     CoordinatesForm,
     CoordinatesImportForm,
     DeviceFilterForm,
@@ -92,9 +92,9 @@ from nautobot_topology_views.utils import (
     find_image_url,
     get_model_role,
     get_model_slug,
-    topology_request_flags,
     image_static_url,
     is_htmx,
+    topology_request_flags,
 )
 
 _TOPOLOGY_NON_FILTER_PARAMS = (
