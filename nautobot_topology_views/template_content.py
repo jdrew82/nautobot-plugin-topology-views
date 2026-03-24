@@ -1,8 +1,4 @@
 from nautobot.extras.plugins import TemplateExtension
-from django.conf import settings
-from packaging import version
-
-NAUTOBOT_CURRENT_VERSION = version.parse(settings.VERSION)
 
 
 class SiteButtons(TemplateExtension):
