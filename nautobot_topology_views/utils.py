@@ -65,20 +65,36 @@ IMAGE_DIR, CONF_IMAGE_DIR = _get_image_dirs()
 def image_static_url(path: Path) -> str:
     """Convert an absolute filesystem path to a Django static URL.
 
-    Extracts the portion starting with 'nautobot_topology_views/...' and
-    passes it to Django's ``static()`` helper so it works regardless of
-    whether STATIC_ROOT has been collected or we're serving from the app's
-    source ``static/`` directory.
+    Returns an absolute URL (starting with '/') so it works when used in
+    JavaScript contexts (vis.js image nodes) where relative URLs would
+    resolve against the current page path.
     """
-    # Walk the path parts to find 'nautobot_topology_views' — everything
-    # from that component onward is the static-relative path.
     parts = path.parts
+
+    # Look for 'static' parent directory — take everything after it.
+    # e.g. .../static/nautobot_topology_views/img/foo.svg → nautobot_topology_views/img/foo.svg
     for i, part in enumerate(parts):
-        if part == "nautobot_topology_views" and i + 1 < len(parts):
-            return static(str(Path(*parts[i:])))
+        if part == "static" and i + 1 < len(parts) and parts[i + 1] == "nautobot_topology_views":
+            url = static(str(Path(*parts[i + 1:])))
+            return _ensure_absolute(url)
+
+    # For STATIC_ROOT paths (no 'static' parent), find the last 'nautobot_topology_views'
+    # e.g. /opt/nautobot/static/nautobot_topology_views/img/foo.svg
+    for i in range(len(parts) - 1, -1, -1):
+        if parts[i] == "nautobot_topology_views" and i + 1 < len(parts):
+            url = static(str(Path(*parts[i:])))
+            return _ensure_absolute(url)
 
     # Fallback: just use the filename under the default img prefix
-    return static(f"nautobot_topology_views/img/{path.name}")
+    url = static(f"nautobot_topology_views/img/{path.name}")
+    return _ensure_absolute(url)
+
+
+def _ensure_absolute(url: str) -> str:
+    """Ensure a static URL starts with '/' so it's absolute."""
+    if not url.startswith("/"):
+        return f"/{url}"
+    return url
 
 
 def get_image_from_url(url: str) -> str:
@@ -89,14 +105,17 @@ def get_image_from_url(url: str) -> str:
         return url
 
 
-def find_image_in_dir(glob: str, dir: Path):
+def find_image_in_dir(name: str, dir: Path):
     if not dir.is_dir():
         return None
-    # Search in img/ subdirectory first, then in the directory itself
+    # Try exact name, then lowercased, then slugified (spaces → hyphens)
+    candidates = [name, name.lower(), name.lower().replace(" ", "-")]
     for search_dir in [dir / "img", dir]:
-        if search_dir.is_dir():
+        if not search_dir.is_dir():
+            continue
+        for candidate in candidates:
             result = next(
-                (f for f in search_dir.glob(f"{glob}.*") if f.suffix.lstrip(".") in IMAGE_FILETYPES),
+                (f for f in search_dir.glob(f"{candidate}.*") if f.suffix.lstrip(".") in IMAGE_FILETYPES),
                 None,
             )
             if result:

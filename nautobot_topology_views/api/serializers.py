@@ -21,7 +21,7 @@ class TopologyDummySerializer(ValidatedModelSerializer):
 class RoleImageSerializer(ValidatedModelSerializer):
     class Meta:
         model = RoleImage
-        fields = ("content_type", "model_role", "image")
+        fields = ("content_type", "object_id", "image")
 
 
 class CoordinateGroupSerializer(ValidatedModelSerializer):

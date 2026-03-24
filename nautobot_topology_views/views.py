@@ -143,8 +143,8 @@ def create_node(device: Union[Device, Circuit, PowerPanel, PowerFeed], save_coor
 
         if device.provider is not None:
             node_content += f"<tr><th>Provider: </th><td>{device.provider.name}</td></tr>"
-        if device.type is not None:
-            node_content += f"<tr><th>Type: </th><td>{device.type.name}</td></tr>"
+        if device.circuit_type is not None:
+            node_content += f"<tr><th>Type: </th><td>{device.circuit_type.name}</td></tr>"
     elif isinstance(device, PowerPanel):
         dev_name = device.name
         node["id"] = f"p{device.pk}"
@@ -364,7 +364,7 @@ def get_topology_data(
 
         if show_logical_connections:
             path_complete_interfaces = Interface.objects.filter(
-                Q(_path__is_complete=True) & Q(device_id__in=device_ids)
+                Q(_path__is_active=True) & Q(device_id__in=device_ids)
             )
             for path_complete_interface in path_complete_interfaces:
                 connected = path_complete_interface.connected_endpoint
@@ -474,7 +474,7 @@ def get_topology_data(
             nodes.append(create_node(d, save_coords, group_id))
 
     if show_logical_connections:
-        interfaces = Interface.objects.filter(Q(_path__is_complete=True) & Q(device_id__in=device_ids))
+        interfaces = Interface.objects.filter(Q(_path__is_active=True) & Q(device_id__in=device_ids))
 
         for interface in interfaces:
             destination = interface._path.destination if interface._path else None
@@ -700,7 +700,7 @@ class TopologyHomeView(PermissionRequiredMixin, View):
                     "topology_data": json.dumps(topo_data),
                     "broken_image": find_image_url("role-unknown"),
                     "epoch": int(time.time()),
-                    "basepath": settings.FORCE_SCRIPT_NAME,
+                    "basepath": settings.FORCE_SCRIPT_NAME or "",
                 },
             )
 
@@ -714,7 +714,7 @@ class TopologyHomeView(PermissionRequiredMixin, View):
                 "topology_data": json.dumps(topo_data),
                 "broken_image": find_image_url("role-unknown"),
                 "model": self.model,
-                "basepath": settings.FORCE_SCRIPT_NAME,
+                "basepath": settings.FORCE_SCRIPT_NAME or "",
             },
         )
 
@@ -782,7 +782,7 @@ class TopologyImagesView(PermissionRequiredMixin, View):
             {
                 "roles": sorted(list(roles.values()), key=lambda r: r["name"]),
                 "images": images,
-                "basepath": settings.FORCE_SCRIPT_NAME,
+                "basepath": settings.FORCE_SCRIPT_NAME or "",
             },
         )
 
