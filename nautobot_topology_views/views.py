@@ -1,95 +1,95 @@
 import json
-from functools import reduce
-from typing import DefaultDict, Dict, Optional, Union
 import time
+from functools import reduce
 from itertools import chain
+from typing import DefaultDict, Dict, Optional, Union
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, QuerySet, Count
+from django.db.models import Count, Q, QuerySet
 from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponseRedirect, QueryDict
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.views.generic import View
-
-from nautobot_topology_views.utils import is_htmx
+from nautobot.apps.views import (
+    BulkImportView,
+    ObjectDeleteView,
+    ObjectEditView,
+    ObjectListView,
+    ObjectView,
+)
 from nautobot.circuits.models import Circuit, CircuitTermination, ProviderNetwork
+from nautobot.core.forms.forms import DynamicFilterFormSet
+from nautobot.core.utils.requests import get_filterable_params_from_filter_params
+from nautobot.core.views.mixins import ObjectListViewMixin
+from nautobot.core.views.utils import check_filter_for_display
 from nautobot.dcim.models import (
     Cable,
     Device,
-    device_components,
     FrontPort,
     Interface,
     PowerFeed,
     PowerPanel,
     RearPort,
+    device_components,
 )
 from nautobot.extras.models import Role
-from nautobot.apps.views import (
-    ObjectView,
-    ObjectListView,
-    ObjectEditView,
-    ObjectDeleteView,
-    BulkImportView,
-)
+
+import nautobot_topology_views.models
 from nautobot_topology_views.filters import (
-    DeviceFilterSet,
-    CoordinatesFilterSet,
     CircuitCoordinatesFilterSet,
-    PowerPanelCoordinatesFilterSet,
+    CoordinatesFilterSet,
+    DeviceFilterSet,
     PowerFeedCoordinatesFilterSet,
+    PowerPanelCoordinatesFilterSet,
 )
 from nautobot_topology_views.forms import (
+    CircuitCoordinatesFilterForm,
+    CircuitCoordinatesForm,
+    CircuitCoordinatesImportForm,
+    CoordinateGroupsForm,
+    CoordinateGroupsImportForm,
+    CoordinatesFilterForm,
+    CoordinatesForm,
+    CoordinatesImportForm,
     DeviceFilterForm,
     IndividualOptionsForm,
-    CoordinateGroupsForm,
-    CircuitCoordinatesForm,
-    CircuitCoordinatesFilterForm,
-    CircuitCoordinatesImportForm,
-    PowerPanelCoordinatesForm,
-    PowerPanelCoordinatesFilterForm,
-    PowerPanelCoordinatesImportForm,
-    PowerFeedCoordinatesForm,
     PowerFeedCoordinatesFilterForm,
+    PowerFeedCoordinatesForm,
     PowerFeedCoordinatesImportForm,
-    CoordinatesForm,
-    CoordinatesFilterForm,
-    CoordinateGroupsImportForm,
-    CoordinatesImportForm,
+    PowerPanelCoordinatesFilterForm,
+    PowerPanelCoordinatesForm,
+    PowerPanelCoordinatesImportForm,
 )
-import nautobot_topology_views.models
 from nautobot_topology_views.models import (
-    RoleImage,
-    IndividualOptions,
-    CoordinateGroup,
-    Coordinate,
     CircuitCoordinate,
-    PowerPanelCoordinate,
+    Coordinate,
+    CoordinateGroup,
+    IndividualOptions,
     PowerFeedCoordinate,
+    PowerPanelCoordinate,
+    RoleImage,
 )
 from nautobot_topology_views.tables import (
+    CircuitCoordinateListTable,
     CoordinateGroupListTable,
     CoordinateListTable,
-    CircuitCoordinateListTable,
-    PowerPanelCoordinateListTable,
     PowerFeedCoordinateListTable,
+    PowerPanelCoordinateListTable,
 )
 from nautobot_topology_views.utils import (
     CONF_IMAGE_DIR,
+    IMAGE_FILETYPES,
+    LinePattern,
     find_image_url,
     get_model_role,
     get_model_slug,
-    image_static_url,
-    LinePattern,
     get_query_settings,
-    IMAGE_FILETYPES,
+    image_static_url,
+    is_htmx,
 )
-from nautobot.core.forms.forms import DynamicFilterFormSet
-from nautobot.core.utils.requests import get_filterable_params_from_filter_params
-from nautobot.core.views.mixins import ObjectListViewMixin
-from nautobot.core.views.utils import check_filter_for_display
 
 _TOPOLOGY_NON_FILTER_PARAMS = frozenset(ObjectListViewMixin.non_filter_params) | frozenset(
     (
@@ -386,9 +386,9 @@ def get_topology_data(
                 termination_b = create_circuit_termination(circuit_termination.cable.termination_b)
             elif circuit_termination.provider_network is not None:
                 if circuit_termination.provider_network_id not in nodes_provider_networks:
-                    nodes_provider_networks[
-                        circuit_termination.provider_network.pk
-                    ] = circuit_termination.provider_network
+                    nodes_provider_networks[circuit_termination.provider_network.pk] = (
+                        circuit_termination.provider_network
+                    )
 
             if bool(termination_a) and bool(termination_b):
                 circuit_model = {"provider_name": circuit_termination.circuit.provider.name}

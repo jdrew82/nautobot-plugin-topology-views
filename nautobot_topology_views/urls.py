@@ -1,7 +1,7 @@
 from django.urls import path
 from nautobot.extras.views import ObjectChangeLogView
-from nautobot_topology_views import models, views
 
+from nautobot_topology_views import models, views
 
 urlpatterns = (
     path("topology/", views.TopologyHomeView.as_view(), name="home"),

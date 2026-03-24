@@ -1,5 +1,7 @@
 """Plugin declaration for nautobot_topology_views."""
+
 from importlib import metadata
+
 from nautobot.extras.plugins import NautobotAppConfig
 
 __version__ = metadata.version(__name__)
