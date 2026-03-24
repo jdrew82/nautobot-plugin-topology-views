@@ -22,36 +22,37 @@ from nautobot_topology_views.api.serializers import (
     TopologyDummySerializer,
 )
 import nautobot_topology_views.models
-from nautobot_topology_views.models import (
-    RoleImage,
-    IndividualOptions,
-    CoordinateGroup,
-    Coordinate,
-    CircuitCoordinate,
-    PowerPanelCoordinate,
-    PowerFeedCoordinate,
+from nautobot_topology_views.models import RoleImage, CoordinateGroup
+from nautobot_topology_views.views import (
+    filtered_topology_devices_and_options,
+    topology_data_from_request,
 )
-from nautobot_topology_views.views import get_topology_data
-from nautobot_topology_views.utils import get_image_from_url, export_data_to_xml, get_query_settings
-from nautobot_topology_views.filters import DeviceFilterSet
+from nautobot_topology_views.utils import get_image_from_url, export_data_to_xml
 
 
-class SaveCoordsViewSet(PermissionRequiredMixin, ReadOnlyModelViewSet):
+class SaveCoordsViewSet(PermissionRequiredMixin, ReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+    """API endpoint for saving node coordinates on the topology canvas."""
+
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = Device.objects.none()
     serializer_class = TopologyDummySerializer
 
     @action(detail=False, methods=["patch"])
-    def save_coords(self, request):
+    def save_coords(self, request):  # pylint: disable=too-many-branches
+        """Persist x/y for a topology node (device, circuit, or power object)."""
         if not settings.PLUGINS_CONFIG["nautobot_topology_views"]["allow_coordinates_saving"]:
             return Response({"status": "not allowed to save coords"}, status=500)
 
-        device_id: str = request.data.get("node_id", None)
+        device_id = request.data.get("node_id")
+        if not device_id:
+            return Response({"status": "invalid node_id in body"}, status=400)
+
         x_coord = request.data.get("x", None)
         y_coord = request.data.get("y", None)
         group_id = request.data.get("group", "None")
 
+        model_name = None
         actual_device = None
         if device_id.startswith("c"):
             device_id = device_id.lstrip("c")
@@ -98,63 +99,37 @@ class SaveCoordsViewSet(PermissionRequiredMixin, ReadOnlyModelViewSet):
                         y=y_coord,
                     )
                 coords.save()
-        except:
+        except Exception:  # pylint: disable=broad-exception-caught
             return Response({"status": "Coordinates could not be saved."}, status=500)
 
         return Response({"status": "saved coords"})
 
 
 class ExportTopoToXML(PermissionRequiredMixin, ViewSet):
+    """API endpoint for exporting the topology diagram to draw.io XML format."""
+
     permission_required = ("dcim.view_location", "dcim.view_device")
 
     queryset = Device.objects.none()
     serializer_class = TopologyDummySerializer
 
     def list(self, request):
-        self.filterset = DeviceFilterSet
-        self.queryset = Device.objects.all().select_related("device_type", "role")
-        self.queryset = self.filterset(request.GET, self.queryset).qs
+        """Return draw.io XML for the filtered topology when query params are present."""
+        queryset, individual_options = filtered_topology_devices_and_options(request, request.user)
 
-        individualOptions, created = IndividualOptions.objects.get_or_create(
-            user_id=request.user.id,
-        )
-
-        if request.GET:
-            (
-                save_coords,
-                show_unconnected,
-                show_power,
-                show_circuit,
-                show_logical_connections,
-                show_single_cable_logical_conns,
-                show_cables,
-                show_neighbors,
-            ) = get_query_settings(request)
-            if "group" not in request.query_params:
-                group_id = "default"
-            else:
-                group_id = request.query_params["group"]
-            topo_data = get_topology_data(
-                queryset=self.queryset,
-                individualOptions=individualOptions,
-                save_coords=save_coords,
-                show_unconnected=show_unconnected,
-                show_cables=show_cables,
-                show_logical_connections=show_logical_connections,
-                show_single_cable_logical_conns=show_single_cable_logical_conns,
-                show_neighbors=show_neighbors,
-                show_circuit=show_circuit,
-                show_power=show_power,
-                group_id=group_id,
-            )
-            xml_data = export_data_to_xml(topo_data).decode("utf-8")
-
-            return HttpResponse(xml_data, content_type="application/xml; charset=utf-8")
-        else:
+        params = getattr(request, "query_params", request.GET)
+        if not params:
             return JsonResponse({"status": "Missing or malformed request parameters"}, status=400)
 
+        topo_data = topology_data_from_request(request, queryset, individual_options)
+        xml_data = export_data_to_xml(topo_data).decode("utf-8")
 
-class SaveRoleImageViewSet(NautobotModelViewSet):
+        return HttpResponse(xml_data, content_type="application/xml; charset=utf-8")
+
+
+class SaveRoleImageViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancestors
+    """API endpoint for saving role-to-image mappings."""
+
     queryset = RoleImage.objects.none()
     serializer_class = RoleImageSerializer
     permission_required = (
@@ -165,6 +140,7 @@ class SaveRoleImageViewSet(NautobotModelViewSet):
     @action(detail=False, methods=["post"])
     @extend_schema(exclude=True)
     def save(self, request):
+        """Bulk upsert RoleImage rows from a flat role-id / static URL map."""
         if not isinstance(request.data, dict):
             return JsonResponse({"status": "Missing or malformed request body"}, status=400)
 
@@ -206,14 +182,14 @@ class SaveRoleImageViewSet(NautobotModelViewSet):
         if device_roles:
             device_role_ct = ContentType.objects.get_for_model(Role)
 
-            for id, url in device_roles.items():
+            for role_pk, url in device_roles.items():
                 RoleImage.objects.update_or_create(
                     {
                         "content_type_id": device_role_ct.pk,
-                        "object_id": id,
+                        "object_id": role_pk,
                         "image": str(get_image_from_url(url)),
                     },
-                    object_id=id,
+                    object_id=role_pk,
                 )
 
         for content_type_id, url in content_type_ids.items():

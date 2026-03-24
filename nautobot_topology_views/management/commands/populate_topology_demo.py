@@ -95,6 +95,8 @@ def _get_or_create_role(name, model_class, color="9e9e9e", description=""):
 
 
 class Command(BaseCommand):
+    """Management command to populate Nautobot with demo topology data."""
+
     help = "Populate Nautobot with demo network topology data for the Topology Views app."
 
     def add_arguments(self, parser):
@@ -119,18 +121,6 @@ class Command(BaseCommand):
         if not tag:
             self.stdout.write(self.style.WARNING("No demo tag found — nothing to flush."))
             return
-
-        models_to_flush = [
-            IPAddressToInterface,
-            IPAddress,
-            Prefix,
-            Cable,
-            CircuitTermination,
-            Circuit,
-            Device,
-            Rack,
-            Location,
-        ]
 
         with transaction.atomic():
             # Delete cables first (they reference interfaces which reference devices)
@@ -183,7 +173,7 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------
 
     @transaction.atomic
-    def _populate(self):
+    def _populate(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         self.stdout.write("Creating demo topology data...")
 
         # -- Tag --
@@ -353,7 +343,7 @@ class Command(BaseCommand):
             # Each spine connects to every leaf (full mesh)
             spine_port_idx = {s.pk: 1 for s in spines}
             for spine in spines:
-                for leaf_idx, leaf in enumerate(leafs):
+                for leaf in leafs:
                     spine_iface = spine.interfaces.filter(name=f"Ethernet1/{spine_port_idx[spine.pk]}").first()
                     # Leaf uplinks use ports 49+ (40GE)
                     uplink_port = 49 + (spines.index(spine))
@@ -501,7 +491,7 @@ class Command(BaseCommand):
                         defaults={"location": Location.objects.get(name="LAX-DC1")},
                     )
 
-        self.stdout.write(f"  Created 2 WAN circuits")
+        self.stdout.write("  Created 2 WAN circuits")
 
         # ------------------------------------------------------------------
         # Loopback interfaces and IPs

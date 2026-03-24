@@ -1,6 +1,6 @@
 """Navigation menu definitions for nautobot_topology_views."""
 
-from nautobot.core.apps import NavMenuAddButton, NavMenuImportButton, NavMenuGroup, NavMenuItem, NavMenuTab
+from nautobot.core.apps import NavMenuAddButton, NavMenuGroup, NavMenuImportButton, NavMenuItem, NavMenuTab
 
 menu_items = (
     NavMenuTab(

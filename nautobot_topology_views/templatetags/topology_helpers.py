@@ -9,7 +9,7 @@ register = template.Library()
 
 
 @register.inclusion_tag("nautobot_topology_views/inc/applied_filters.html", takes_context=True)
-def applied_filters(context, model, form, query_params):
+def applied_filters(context, _model, form, query_params):
     """Display the active filters for a given filter form."""
     user = context["request"].user
     form.is_valid()  # Ensure cleaned_data has been set

@@ -1,5 +1,8 @@
 """Views for nautobot_topology_views."""
 
+# Module aggregates UI, coordinate CRUD, and topology graph building.
+# pylint: disable=too-many-lines
+
 import json
 import time
 from functools import reduce
@@ -41,31 +44,32 @@ from nautobot.extras.models import Role
 
 import nautobot_topology_views.models
 from nautobot_topology_views.filters import (
-    CircuitCoordinatesFilterSet,
-    CoordinatesFilterSet,
+    CircuitCoordinateFilterSet,
+    CoordinateFilterSet,
     DeviceFilterSet,
-    PowerFeedCoordinatesFilterSet,
-    PowerPanelCoordinatesFilterSet,
+    PowerFeedCoordinateFilterSet,
+    PowerPanelCoordinateFilterSet,
 )
 from nautobot_topology_views.forms import (
-    CircuitCoordinatesFilterForm,
+    CircuitCoordinateFilterForm,
     CircuitCoordinatesForm,
     CircuitCoordinatesImportForm,
     CoordinateGroupsForm,
     CoordinateGroupsImportForm,
-    CoordinatesFilterForm,
+    CoordinateFilterForm,
     CoordinatesForm,
     CoordinatesImportForm,
     DeviceFilterForm,
     IndividualOptionsForm,
-    PowerFeedCoordinatesFilterForm,
+    PowerFeedCoordinateFilterForm,
     PowerFeedCoordinatesForm,
     PowerFeedCoordinatesImportForm,
-    PowerPanelCoordinatesFilterForm,
+    PowerPanelCoordinateFilterForm,
     PowerPanelCoordinatesForm,
     PowerPanelCoordinatesImportForm,
 )
 from nautobot_topology_views.models import (
+    INDIVIDUAL_OPTIONS_BOOL_DISPLAY_FIELDS,
     CircuitCoordinate,
     Coordinate,
     CoordinateGroup,
@@ -75,11 +79,11 @@ from nautobot_topology_views.models import (
     RoleImage,
 )
 from nautobot_topology_views.tables import (
-    CircuitCoordinateListTable,
-    CoordinateGroupListTable,
-    CoordinateListTable,
-    PowerFeedCoordinateListTable,
-    PowerPanelCoordinateListTable,
+    CircuitCoordinateTable,
+    CoordinateGroupTable,
+    CoordinateTable,
+    PowerFeedCoordinateTable,
+    PowerPanelCoordinateTable,
 )
 from nautobot_topology_views.utils import (
     CONF_IMAGE_DIR,
@@ -88,24 +92,15 @@ from nautobot_topology_views.utils import (
     find_image_url,
     get_model_role,
     get_model_slug,
-    get_query_settings,
+    topology_request_flags,
     image_static_url,
     is_htmx,
 )
 
-_TOPOLOGY_NON_FILTER_PARAMS = frozenset(ObjectListViewMixin.non_filter_params) | frozenset(
-    (
-        "draw_init",
-        "group",
-        "save_coords",
-        "show_unconnected",
-        "show_cables",
-        "show_logical_connections",
-        "show_single_cable_logical_conns",
-        "show_neighbors",
-        "show_circuit",
-        "show_power",
-    )
+_TOPOLOGY_NON_FILTER_PARAMS = (
+    frozenset(ObjectListViewMixin.non_filter_params)
+    | frozenset(("draw_init", "group"))
+    | frozenset(f for f in INDIVIDUAL_OPTIONS_BOOL_DISPLAY_FIELDS if f != "draw_default_layout")
 )
 
 
@@ -121,7 +116,17 @@ def get_topology_dynamic_filter_form():
     return DynamicFilterFormSet(filterset=DeviceFilterSet())
 
 
+def filtered_topology_devices_and_options(request, user):
+    """Apply DeviceFilterSet to all devices and load or create IndividualOptions for the user."""
+    params = getattr(request, "query_params", request.GET)
+    queryset = Device.objects.all().select_related("device_type", "role")
+    queryset = DeviceFilterSet(params, queryset).qs
+    individual_options, _ = IndividualOptions.objects.get_or_create(user_id=user.id)
+    return queryset, individual_options
+
+
 def get_image_for_entity(entity: Union[Device, Circuit, PowerPanel, PowerFeed]):
+    """Resolve topology icon URL for a device, circuit, power panel, or power feed."""
     is_device = isinstance(entity, Device)
     query = (
         {"object_id": entity.role_id}
@@ -135,7 +140,12 @@ def get_image_for_entity(entity: Union[Device, Circuit, PowerPanel, PowerFeed]):
         return find_image_url(entity.role.name if is_device else get_model_slug(entity.__class__))
 
 
-def create_node(device: Union[Device, Circuit, PowerPanel, PowerFeed], save_coords: bool, group_id="default"):
+def create_node(  # pylint: disable=too-many-branches,too-many-statements
+    device: Union[Device, Circuit, PowerPanel, PowerFeed],
+    _save_coords: bool,
+    group_id="default",
+):
+    """Build a vis-network node dict for the given object (coordinates from DB or custom fields)."""
     node = {}
     node_content = ""
     if isinstance(device, Circuit):
@@ -232,7 +242,7 @@ def create_node(device: Union[Device, Circuit, PowerPanel, PowerFeed], save_coor
                 node["y"] = int(cords[1])
                 node["physics"] = False
 
-    dev_title = "<table><tbody> %s</tbody></table>" % (node_content)
+    dev_title = f"<table><tbody> {node_content}</tbody></table>"
     node["title"] = dev_title
     node["name"] = dev_name
     node["label"] = dev_name
@@ -243,7 +253,7 @@ def create_node(device: Union[Device, Circuit, PowerPanel, PowerFeed], save_coor
     return node
 
 
-def create_edge(
+def create_edge(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     edge_id: int,
     termination_a: Dict,
     termination_b: Dict,
@@ -252,6 +262,7 @@ def create_edge(
     power: Optional[bool] = None,
     interface: Optional[Interface] = None,
 ):
+    """Build a vis-network edge dict (cable, circuit, power, or logical interface link)."""
     cable_a_name = (
         "device A name unknown" if termination_a["termination_name"] is None else termination_a["termination_name"]
     )
@@ -281,13 +292,13 @@ def create_edge(
         title = f"Circuit provider: {circuit['provider_name']}<br>Termination"
 
     elif power is not None:
-        edge["dashes"] = LinePattern().power
+        edge["dashes"] = LinePattern.power
         title = "Power Connection"
 
     elif interface is not None:
         title = "Interface Connection"
         edge["width"] = 3
-        edge["dashes"] = LinePattern().logical
+        edge["dashes"] = LinePattern.logical
         edge["color"] = "#f1c232"
         edge["href"] = interface.get_absolute_url() + "trace"
 
@@ -302,13 +313,14 @@ def create_edge(
 
 
 def create_circuit_termination(termination):
+    """Map a cable termination to vis-network termination metadata."""
     if isinstance(termination, CircuitTermination):
         return {
             "termination_name": termination.circuit.provider.name,
             "termination_device_name": termination.circuit.cid,
-            "device_id": "c{}".format(termination.circuit.pk),
+            "device_id": f"c{termination.circuit.pk}",
         }
-    if isinstance(termination, Interface) or isinstance(termination, FrontPort) or isinstance(termination, RearPort):
+    if isinstance(termination, (Interface, FrontPort, RearPort)):
         return {
             "termination_name": termination.name,
             "termination_device_name": termination.device.name,
@@ -317,9 +329,9 @@ def create_circuit_termination(termination):
     return None
 
 
-def get_topology_data(
+def get_topology_data(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches,too-many-statements,too-many-nested-blocks
     queryset: QuerySet,
-    individualOptions: IndividualOptions,
+    individual_options: IndividualOptions,
     show_unconnected: bool,
     save_coords: bool,
     show_cables: bool,
@@ -330,6 +342,7 @@ def get_topology_data(
     show_power: bool,
     group_id,
 ):
+    """Assemble nodes and edges for the topology canvas from devices and display flags."""
     supported_termination_types = []
     for t in IndividualOptions.CHOICES:
         supported_termination_types.append(t[1])
@@ -348,7 +361,7 @@ def get_topology_data(
     cable_ids = DefaultDict(dict)
     interface_ids = DefaultDict(dict)
 
-    ignore_cable_type = individualOptions.ignore_cable_type
+    ignore_cable_type = individual_options.ignore_cable_type
 
     device_ids = [d.pk for d in queryset]
     location_ids = [d.location_id for d in queryset]
@@ -368,7 +381,7 @@ def get_topology_data(
             path_complete_interfaces = Interface.objects.filter(Q(_path__is_active=True) & Q(device_id__in=device_ids))
             for path_complete_interface in path_complete_interfaces:
                 connected = path_complete_interface.connected_endpoint
-                if connected is not None and type(connected) != ProviderNetwork:
+                if connected is not None and not isinstance(connected, ProviderNetwork):
                     device_ids.append(connected.device.id)
 
     if show_circuit:
@@ -477,7 +490,9 @@ def get_topology_data(
         interfaces = Interface.objects.filter(Q(_path__is_active=True) & Q(device_id__in=device_ids))
 
         for interface in interfaces:
-            destination = interface._path.destination if interface._path else None
+            # Nautobot path API; _path is the supported way to resolve logical L2 paths
+            path = interface._path  # pylint: disable=protected-access
+            destination = path.destination if path else None
             if destination is not None:
                 if isinstance(destination, device_components.Interface):
                     if destination.device.id not in device_ids:
@@ -596,69 +611,47 @@ def get_topology_data(
     return results
 
 
+def topology_data_from_request(request, queryset, individual_options):
+    """Build topology nodes/edges from request query params and a filtered Device queryset."""
+    return get_topology_data(
+        queryset=queryset,
+        individual_options=individual_options,
+        **topology_request_flags(request),
+    )
+
+
 class TopologyHomeView(PermissionRequiredMixin, View):
+    """Show the topology home page."""
+
     permission_required = ("dcim.view_location", "dcim.view_device")
 
-    """
-    Show the home page
-    """
-
-    def get(self, request):
+    def get(  # pylint: disable=attribute-defined-outside-init,too-many-locals,too-many-branches
+        self,
+        request,
+    ):
+        """Render topology home (redirect to saved defaults, or draw canvas from GET filters)."""
         self.filterset = DeviceFilterSet
-        self.queryset = Device.objects.all().select_related("device_type", "role")
-        self.queryset = self.filterset(request.GET, self.queryset).qs
+        self.queryset, individual_options = filtered_topology_devices_and_options(request, request.user)
         self.model = self.queryset.model
         topo_data = None
 
-        individualOptions, created = IndividualOptions.objects.get_or_create(
-            user_id=request.user.id,
-        )
-
         if request.GET:
-            (
-                save_coords,
-                show_unconnected,
-                show_power,
-                show_circuit,
-                show_logical_connections,
-                show_single_cable_logical_conns,
-                show_cables,
-                show_neighbors,
-            ) = get_query_settings(request)
-
-            if "group" not in request.GET:
-                group_id = "default"
-            else:
-                group_id = request.GET["group"]
-
             if (
                 "draw_init" not in request.GET
                 or "draw_init" in request.GET
                 and request.GET["draw_init"].lower() == "true"
             ):
-                topo_data = get_topology_data(
-                    queryset=self.queryset,
-                    individualOptions=individualOptions,
-                    save_coords=save_coords,
-                    show_unconnected=show_unconnected,
-                    show_cables=show_cables,
-                    show_logical_connections=show_logical_connections,
-                    show_single_cable_logical_conns=show_single_cable_logical_conns,
-                    show_neighbors=show_neighbors,
-                    show_circuit=show_circuit,
-                    show_power=show_power,
-                    group_id=group_id,
-                )
+                topo_data = topology_data_from_request(request, self.queryset, individual_options)
 
         else:
             # No GET-Request in URL. We most likely came here from the navigation menu.
             preselected_device_roles = (
-                IndividualOptions.objects.get(id=individualOptions.id)
+                IndividualOptions.objects.get(id=individual_options.id)
                 .preselected_device_roles.all()
                 .values_list("id", flat=True)
             )
             preselected_tags = (
-                IndividualOptions.objects.get(id=individualOptions.id)
+                IndividualOptions.objects.get(id=individual_options.id)
                 .preselected_tags.all()
                 .values_list(Lower("name"), flat=True)
             )
@@ -667,23 +660,23 @@ class TopologyHomeView(PermissionRequiredMixin, View):
             q.setlist("role_id", list(preselected_device_roles))
             q.setlist("tag", list(preselected_tags))
 
-            if individualOptions.save_coords:
+            if individual_options.save_coords:
                 q["save_coords"] = "on"
-            if individualOptions.show_unconnected:
+            if individual_options.show_unconnected:
                 q["show_unconnected"] = "on"
-            if individualOptions.show_cables:
+            if individual_options.show_cables:
                 q["show_cables"] = "on"
-            if individualOptions.show_logical_connections:
+            if individual_options.show_logical_connections:
                 q["show_logical_connections"] = "on"
-            if individualOptions.show_single_cable_logical_conns:
+            if individual_options.show_single_cable_logical_conns:
                 q["show_single_cable_logical_conns"] = "on"
-            if individualOptions.show_neighbors:
+            if individual_options.show_neighbors:
                 q["show_neighbors"] = "on"
-            if individualOptions.show_circuit:
+            if individual_options.show_circuit:
                 q["show_circuit"] = "on"
-            if individualOptions.show_power:
+            if individual_options.show_power:
                 q["show_power"] = "on"
-            if individualOptions.draw_default_layout:
+            if individual_options.draw_default_layout:
                 q["draw_init"] = "true"
             else:
                 q["draw_init"] = "false"
@@ -724,6 +717,8 @@ ADDITIONAL_ROLES = (PowerPanel, PowerFeed, Circuit)
 
 
 class TopologyImagesView(PermissionRequiredMixin, View):
+    """View for managing role-to-image mappings."""
+
     permission_required = (
         "dcim.view_location",
         "nautobot_topology_views.view_roleimage",
@@ -732,6 +727,7 @@ class TopologyImagesView(PermissionRequiredMixin, View):
     )
 
     def get(self, request: HttpRequest):
+        """List available icons and current RoleImage assignments for the topology UI."""
         # Scan for images in CONF_IMAGE_DIR and its img/ subdirectory
         search_dirs = [CONF_IMAGE_DIR]
         img_subdir = CONF_IMAGE_DIR / "img"
@@ -758,7 +754,7 @@ class TopologyImagesView(PermissionRequiredMixin, View):
                 },
             },
             Role.objects.all(),
-            dict(),
+            {},
         )
 
         for additional_role in ADDITIONAL_ROLES:
@@ -788,12 +784,16 @@ class TopologyImagesView(PermissionRequiredMixin, View):
 
 
 class CircuitCoordinateView(PermissionRequiredMixin, ObjectView):
+    """Detail view for a CircuitCoordinate."""
+
     permission_required = "nautobot_topology_views.view_coordinate"
 
     queryset = CircuitCoordinate.objects.all()
 
 
 class CircuitCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
+    """View for creating a CircuitCoordinate."""
+
     permission_required = "nautobot_topology_views.add_coordinate"
 
     queryset = CircuitCoordinate.objects.all()
@@ -801,20 +801,26 @@ class CircuitCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
 
 
 class CircuitCoordinateBulkImportView(BulkImportView):
+    """View for bulk importing CircuitCoordinate objects."""
+
     queryset = CircuitCoordinate.objects.all()
     model_form = CircuitCoordinatesImportForm
 
 
 class CircuitCoordinateListView(PermissionRequiredMixin, ObjectListView):
+    """List view for CircuitCoordinate objects."""
+
     permission_required = "nautobot_topology_views.view_coordinate"
 
     queryset = CircuitCoordinate.objects.all()
-    table = CircuitCoordinateListTable
-    filterset = CircuitCoordinatesFilterSet
-    filterset_form = CircuitCoordinatesFilterForm
+    table = CircuitCoordinateTable
+    filterset = CircuitCoordinateFilterSet
+    filterset_form = CircuitCoordinateFilterForm
 
 
 class CircuitCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
+    """View for editing a CircuitCoordinate."""
+
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = CircuitCoordinate.objects.all()
@@ -822,18 +828,24 @@ class CircuitCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
 
 
 class CircuitCoordinateDeleteView(PermissionRequiredMixin, ObjectDeleteView):
+    """View for deleting a CircuitCoordinate."""
+
     permission_required = "nautobot_topology_views.delete_coordinate"
 
     queryset = CircuitCoordinate.objects.all()
 
 
 class PowerPanelCoordinateView(PermissionRequiredMixin, ObjectView):
+    """Detail view for a PowerPanelCoordinate."""
+
     permission_required = "nautobot_topology_views.view_coordinate"
 
     queryset = PowerPanelCoordinate.objects.all()
 
 
 class PowerPanelCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
+    """View for creating a PowerPanelCoordinate."""
+
     permission_required = "nautobot_topology_views.add_coordinate"
 
     queryset = PowerPanelCoordinate.objects.all()
@@ -841,20 +853,26 @@ class PowerPanelCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
 
 
 class PowerPanelCoordinateBulkImportView(BulkImportView):
+    """View for bulk importing PowerPanelCoordinate objects."""
+
     queryset = PowerPanelCoordinate.objects.all()
     model_form = PowerPanelCoordinatesImportForm
 
 
 class PowerPanelCoordinateListView(PermissionRequiredMixin, ObjectListView):
+    """List view for PowerPanelCoordinate objects."""
+
     permission_required = "nautobot_topology_views.view_coordinate"
 
     queryset = PowerPanelCoordinate.objects.all()
-    table = PowerPanelCoordinateListTable
-    filterset = PowerPanelCoordinatesFilterSet
-    filterset_form = PowerPanelCoordinatesFilterForm
+    table = PowerPanelCoordinateTable
+    filterset = PowerPanelCoordinateFilterSet
+    filterset_form = PowerPanelCoordinateFilterForm
 
 
 class PowerPanelCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
+    """View for editing a PowerPanelCoordinate."""
+
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = PowerPanelCoordinate.objects.all()
@@ -862,18 +880,24 @@ class PowerPanelCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
 
 
 class PowerPanelCoordinateDeleteView(PermissionRequiredMixin, ObjectDeleteView):
+    """View for deleting a PowerPanelCoordinate."""
+
     permission_required = "nautobot_topology_views.delete_coordinate"
 
     queryset = PowerPanelCoordinate.objects.all()
 
 
 class PowerFeedCoordinateView(PermissionRequiredMixin, ObjectView):
+    """Detail view for a PowerFeedCoordinate."""
+
     permission_required = "nautobot_topology_views.view_coordinate"
 
     queryset = PowerFeedCoordinate.objects.all()
 
 
 class PowerFeedCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
+    """View for creating a PowerFeedCoordinate."""
+
     permission_required = "nautobot_topology_views.add_coordinate"
 
     queryset = PowerFeedCoordinate.objects.all()
@@ -881,20 +905,26 @@ class PowerFeedCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
 
 
 class PowerFeedCoordinateBulkImportView(BulkImportView):
+    """View for bulk importing PowerFeedCoordinate objects."""
+
     queryset = PowerFeedCoordinate.objects.all()
     model_form = PowerFeedCoordinatesImportForm
 
 
 class PowerFeedCoordinateListView(PermissionRequiredMixin, ObjectListView):
+    """List view for PowerFeedCoordinate objects."""
+
     permission_required = "nautobot_topology_views.view_coordinate"
 
     queryset = PowerFeedCoordinate.objects.all()
-    table = PowerFeedCoordinateListTable
-    filterset = PowerFeedCoordinatesFilterSet
-    filterset_form = PowerFeedCoordinatesFilterForm
+    table = PowerFeedCoordinateTable
+    filterset = PowerFeedCoordinateFilterSet
+    filterset_form = PowerFeedCoordinateFilterForm
 
 
 class PowerFeedCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
+    """View for editing a PowerFeedCoordinate."""
+
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = PowerFeedCoordinate.objects.all()
@@ -902,18 +932,24 @@ class PowerFeedCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
 
 
 class PowerFeedCoordinateDeleteView(PermissionRequiredMixin, ObjectDeleteView):
+    """View for deleting a PowerFeedCoordinate."""
+
     permission_required = "nautobot_topology_views.delete_coordinate"
 
     queryset = PowerFeedCoordinate.objects.all()
 
 
 class CoordinateView(PermissionRequiredMixin, ObjectView):
+    """Detail view for a Coordinate."""
+
     permission_required = "nautobot_topology_views.view_coordinate"
 
     queryset = Coordinate.objects.all()
 
 
 class CoordinateAddView(PermissionRequiredMixin, ObjectEditView):
+    """View for creating a Coordinate."""
+
     permission_required = "nautobot_topology_views.add_coordinate"
 
     queryset = Coordinate.objects.all()
@@ -921,20 +957,26 @@ class CoordinateAddView(PermissionRequiredMixin, ObjectEditView):
 
 
 class CoordinateBulkImportView(BulkImportView):
+    """View for bulk importing Coordinate objects."""
+
     queryset = Coordinate.objects.all()
     model_form = CoordinatesImportForm
 
 
 class CoordinateListView(PermissionRequiredMixin, ObjectListView):
+    """List view for Coordinate objects."""
+
     permission_required = "nautobot_topology_views.view_coordinate"
 
     queryset = Coordinate.objects.all()
-    table = CoordinateListTable
-    filterset = CoordinatesFilterSet
-    filterset_form = CoordinatesFilterForm
+    table = CoordinateTable
+    filterset = CoordinateFilterSet
+    filterset_form = CoordinateFilterForm
 
 
 class CoordinateEditView(PermissionRequiredMixin, ObjectEditView):
+    """View for editing a Coordinate."""
+
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = Coordinate.objects.all()
@@ -942,17 +984,22 @@ class CoordinateEditView(PermissionRequiredMixin, ObjectEditView):
 
 
 class CoordinateDeleteView(PermissionRequiredMixin, ObjectDeleteView):
+    """View for deleting a Coordinate."""
+
     permission_required = "nautobot_topology_views.delete_coordinate"
 
     queryset = Coordinate.objects.all()
 
 
 class CoordinateGroupView(PermissionRequiredMixin, ObjectView):
+    """Detail view for a CoordinateGroup."""
+
     permission_required = "nautobot_topology_views.view_coordinategroup"
 
     queryset = CoordinateGroup.objects.all()
 
     def get_extra_context(self, request, instance):
+        """Attach per-type coordinate querysets for the group detail template."""
         return {
             "coordinate_tables": [
                 ("Circuit Coordinates", instance.circuitcoordinate_set.all()),
@@ -964,6 +1011,8 @@ class CoordinateGroupView(PermissionRequiredMixin, ObjectView):
 
 
 class CoordinateGroupAddView(PermissionRequiredMixin, ObjectEditView):
+    """View for creating a CoordinateGroup."""
+
     permission_required = "nautobot_topology_views.add_coordinategroup"
 
     queryset = CoordinateGroup.objects.all()
@@ -971,18 +1020,24 @@ class CoordinateGroupAddView(PermissionRequiredMixin, ObjectEditView):
 
 
 class CoordinateGroupBulkImportView(BulkImportView):
+    """View for bulk importing CoordinateGroup objects."""
+
     queryset = CoordinateGroup.objects.all()
     model_form = CoordinateGroupsImportForm
 
 
 class CoordinateGroupListView(PermissionRequiredMixin, ObjectListView):
+    """List view for CoordinateGroup objects."""
+
     permission_required = "nautobot_topology_views.view_coordinategroup"
 
     queryset = CoordinateGroup.objects.annotate(devices=Count("coordinate"))
-    table = CoordinateGroupListTable
+    table = CoordinateGroupTable
 
 
 class CoordinateGroupEditView(PermissionRequiredMixin, ObjectEditView):
+    """View for editing a CoordinateGroup."""
+
     permission_required = "nautobot_topology_views.change_coordinategroup"
 
     queryset = CoordinateGroup.objects.all()
@@ -990,15 +1045,20 @@ class CoordinateGroupEditView(PermissionRequiredMixin, ObjectEditView):
 
 
 class CoordinateGroupDeleteView(PermissionRequiredMixin, ObjectDeleteView):
+    """View for deleting a CoordinateGroup."""
+
     permission_required = "nautobot_topology_views.delete_coordinategroup"
 
     queryset = CoordinateGroup.objects.all()
 
 
 class TopologyIndividualOptionsView(PermissionRequiredMixin, View):
+    """View for managing per-user topology display preferences."""
+
     permission_required = "nautobot_topology_views.change_individualoptions"
 
     def post(self, request):
+        """Persist topology options from POST."""
         instance = IndividualOptions.objects.get(user_id=request.user.id)
         form = IndividualOptionsForm(request.POST, instance=instance)
         if form.is_valid():
@@ -1010,7 +1070,8 @@ class TopologyIndividualOptionsView(PermissionRequiredMixin, View):
         return HttpResponseRedirect("./")
 
     def get(self, request):
-        queryset, created = IndividualOptions.objects.get_or_create(
+        """Render the topology options form."""
+        queryset, _ = IndividualOptions.objects.get_or_create(
             user_id=request.user.id,
         )
 

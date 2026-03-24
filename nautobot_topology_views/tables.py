@@ -1,66 +1,76 @@
 """Table definitions for nautobot_topology_views."""
 
 import django_tables2 as tables
-
 from nautobot.apps.tables import BaseTable
+
 from nautobot_topology_views.models import (
-    CoordinateGroup,
-    Coordinate,
     CircuitCoordinate,
-    PowerPanelCoordinate,
+    Coordinate,
+    CoordinateGroup,
     PowerFeedCoordinate,
+    PowerPanelCoordinate,
 )
 
 
-class CoordinateGroupListTable(BaseTable):
+class CoordinateGroupTable(BaseTable):
+    """Table for displaying CoordinateGroup objects."""
+
     name = tables.Column(linkify=True)
     devices = tables.Column()
 
-    class Meta(BaseTable.Meta):
+    class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
         model = CoordinateGroup
         fields = ("pk", "id", "name", "description", "devices")
         default_columns = ("name", "description", "devices")
 
 
-class CircuitCoordinateListTable(BaseTable):
+class CircuitCoordinateTable(BaseTable):
+    """Table for displaying CircuitCoordinate objects."""
+
     group = tables.Column(linkify=True)
 
     device = tables.Column(linkify=True)
 
-    class Meta(BaseTable.Meta):
+    class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
         model = CircuitCoordinate
         fields = ("pk", "id", "group", "device", "x", "y")
         default_columns = ("id", "group", "device", "x", "y")
 
 
-class PowerPanelCoordinateListTable(BaseTable):
+class PowerPanelCoordinateTable(BaseTable):
+    """Table for displaying PowerPanelCoordinate objects."""
+
     group = tables.Column(linkify=True)
 
     device = tables.Column(linkify=True)
 
-    class Meta(BaseTable.Meta):
+    class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
         model = PowerPanelCoordinate
         fields = ("pk", "id", "group", "device", "x", "y")
         default_columns = ("id", "group", "device", "x", "y")
 
 
-class PowerFeedCoordinateListTable(BaseTable):
+class PowerFeedCoordinateTable(BaseTable):
+    """Table for displaying PowerFeedCoordinate objects."""
+
     group = tables.Column(linkify=True)
 
     device = tables.Column(linkify=True)
 
-    class Meta(BaseTable.Meta):
+    class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
         model = PowerFeedCoordinate
         fields = ("pk", "id", "group", "device", "x", "y")
         default_columns = ("id", "group", "device", "x", "y")
 
 
-class CoordinateListTable(BaseTable):
+class CoordinateTable(BaseTable):
+    """Table for displaying Coordinate objects."""
+
     group = tables.Column(linkify=True)
 
     device = tables.Column(linkify=True)
 
-    class Meta(BaseTable.Meta):
+    class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
         model = Coordinate
         fields = ("pk", "id", "group", "device", "x", "y")
         default_columns = ("id", "group", "device", "x", "y")

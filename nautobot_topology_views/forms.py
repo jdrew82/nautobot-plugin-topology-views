@@ -2,29 +2,28 @@
 
 from django import forms
 from django.conf import settings
-
 from django.utils.translation import gettext as _
-
 from nautobot.circuits.models import Circuit
-from nautobot.dcim.models import Device, Location, Rack, Manufacturer, DeviceType, Platform, PowerPanel, PowerFeed
+from nautobot.core.forms import BOOLEAN_WITH_BLANK_CHOICES
+from nautobot.core.forms.fields import DynamicModelMultipleChoiceField, TagFilterField
 from nautobot.dcim.choices import DeviceStatusChoices
+from nautobot.dcim.models import Device, DeviceType, Location, Manufacturer, Platform, PowerFeed, PowerPanel, Rack
+from nautobot.extras.forms.base import NautobotFilterForm
 from nautobot.extras.models import Role
 from nautobot.tenancy.forms import TenancyFilterForm
-from nautobot.extras.forms.base import NautobotFilterForm, NautobotModelForm
-from nautobot.core.forms import BOOLEAN_WITH_BLANK_CHOICES
-from nautobot.core.forms.fields import TagFilterField, DynamicModelMultipleChoiceField
 
 from nautobot_topology_views.models import (
-    IndividualOptions,
-    CoordinateGroup,
-    Coordinate,
+    INDIVIDUAL_OPTIONS_BOOL_DISPLAY_FIELDS,
     CircuitCoordinate,
-    PowerPanelCoordinate,
+    Coordinate,
+    CoordinateGroup,
+    IndividualOptions,
     PowerFeedCoordinate,
+    PowerPanelCoordinate,
 )
 
 
-class DeviceFilterForm(TenancyFilterForm, NautobotFilterForm):
+class DeviceFilterForm(TenancyFilterForm, NautobotFilterForm):  # pylint: disable=too-many-ancestors
     """Filter-only form for topology device query params (not a Device ModelForm)."""
 
     model = Device
@@ -170,6 +169,8 @@ class DeviceFilterForm(TenancyFilterForm, NautobotFilterForm):
 
 
 class CoordinateGroupsForm(forms.ModelForm):
+    """Form for creating and editing CoordinateGroup objects."""
+
     fieldsets = (("Group Details", ("name", "description")),)
 
     class Meta:
@@ -178,12 +179,16 @@ class CoordinateGroupsForm(forms.ModelForm):
 
 
 class CoordinateGroupsImportForm(forms.ModelForm):
+    """Form for bulk importing CoordinateGroup objects."""
+
     class Meta:
         model = CoordinateGroup
         fields = ("name", "description")
 
 
 class CircuitCoordinatesForm(forms.ModelForm):
+    """Form for creating and editing CircuitCoordinate objects."""
+
     fieldsets = (("CircuitCoordinate", ("group", "device", "x", "y")),)
 
     class Meta:
@@ -192,6 +197,8 @@ class CircuitCoordinatesForm(forms.ModelForm):
 
 
 class PowerPanelCoordinatesForm(forms.ModelForm):
+    """Form for creating and editing PowerPanelCoordinate objects."""
+
     fieldsets = (("PowerPanel", ("group", "device", "x", "y")),)
 
     class Meta:
@@ -200,6 +207,8 @@ class PowerPanelCoordinatesForm(forms.ModelForm):
 
 
 class PowerFeedCoordinatesForm(forms.ModelForm):
+    """Form for creating and editing PowerFeedCoordinate objects."""
+
     fieldsets = (("PowerFeedCoordinate", ("group", "device", "x", "y")),)
 
     class Meta:
@@ -208,6 +217,8 @@ class PowerFeedCoordinatesForm(forms.ModelForm):
 
 
 class CoordinatesForm(forms.ModelForm):
+    """Form for creating and editing Coordinate objects."""
+
     fieldsets = (("Coordinate", ("group", "device", "x", "y")),)
 
     class Meta:
@@ -216,30 +227,40 @@ class CoordinatesForm(forms.ModelForm):
 
 
 class CircuitCoordinatesImportForm(forms.ModelForm):
+    """Form for bulk importing CircuitCoordinate objects."""
+
     class Meta:
         model = CircuitCoordinate
         fields = ("group", "device", "x", "y")
 
 
 class PowerPanelCoordinatesImportForm(forms.ModelForm):
+    """Form for bulk importing PowerPanelCoordinate objects."""
+
     class Meta:
         model = PowerPanelCoordinate
         fields = ("group", "device", "x", "y")
 
 
 class PowerFeedCoordinatesImportForm(forms.ModelForm):
+    """Form for bulk importing PowerFeedCoordinate objects."""
+
     class Meta:
         model = PowerFeedCoordinate
         fields = ("group", "device", "x", "y")
 
 
 class CoordinatesImportForm(forms.ModelForm):
+    """Form for bulk importing Coordinate objects."""
+
     class Meta:
         model = Coordinate
         fields = ("group", "device", "x", "y")
 
 
-class CircuitCoordinatesFilterForm(NautobotFilterForm):
+class CircuitCoordinateFilterForm(NautobotFilterForm):  # pylint: disable=too-many-ancestors
+    """Filter form for CircuitCoordinate list views."""
+
     model = CircuitCoordinate
     fieldsets = ((None, ("q", "filter_id")), ("CircuitCoordinates", ("group", "device", "x", "y")))
 
@@ -252,7 +273,9 @@ class CircuitCoordinatesFilterForm(NautobotFilterForm):
     y = forms.IntegerField(required=False)
 
 
-class PowerPanelCoordinatesFilterForm(NautobotFilterForm):
+class PowerPanelCoordinateFilterForm(NautobotFilterForm):  # pylint: disable=too-many-ancestors
+    """Filter form for PowerPanelCoordinate list views."""
+
     model = PowerPanelCoordinate
     fieldsets = ((None, ("q", "filter_id")), ("PowerPanelCoordinates", ("group", "device", "x", "y")))
 
@@ -265,8 +288,10 @@ class PowerPanelCoordinatesFilterForm(NautobotFilterForm):
     y = forms.IntegerField(required=False)
 
 
-class PowerFeedCoordinatesFilterForm(NautobotFilterForm):
-    model = Coordinate
+class PowerFeedCoordinateFilterForm(NautobotFilterForm):  # pylint: disable=too-many-ancestors
+    """Filter form for PowerFeedCoordinate list views."""
+
+    model = PowerFeedCoordinate
     fieldsets = ((None, ("q", "filter_id")), ("PowerFeedCoordinates", ("group", "device", "x", "y")))
 
     group = forms.ModelMultipleChoiceField(queryset=CoordinateGroup.objects.all(), required=False)
@@ -278,7 +303,9 @@ class PowerFeedCoordinatesFilterForm(NautobotFilterForm):
     y = forms.IntegerField(required=False)
 
 
-class CoordinatesFilterForm(NautobotFilterForm):
+class CoordinateFilterForm(NautobotFilterForm):  # pylint: disable=too-many-ancestors
+    """Filter form for Coordinate list views."""
+
     model = Coordinate
     fieldsets = ((None, ("q", "filter_id")), ("Coordinates", ("group", "device", "x", "y")))
 
@@ -292,6 +319,8 @@ class CoordinatesFilterForm(NautobotFilterForm):
 
 
 class IndividualOptionsForm(forms.ModelForm):
+    """Form for editing per-user topology display preferences."""
+
     fieldsets = (
         (
             None,
@@ -300,16 +329,8 @@ class IndividualOptionsForm(forms.ModelForm):
                 "ignore_cable_type",
                 "preselected_device_roles",
                 "preselected_tags",
-                "save_coords",
-                "show_unconnected",
-                "show_cables",
-                "show_logical_connections",
-                "show_single_cable_logical_conns",
-                "show_neighbors",
-                "show_circuit",
-                "show_power",
-                "draw_default_layout",
-            ),
+            )
+            + INDIVIDUAL_OPTIONS_BOOL_DISPLAY_FIELDS,
         ),
     )
 
@@ -329,13 +350,13 @@ class IndividualOptionsForm(forms.ModelForm):
         label=_("Preselected Device Role"),
         queryset=Role.objects.all(),
         required=False,
-        help_text=_("Select Device Roles that you want to have " "preselected in the filter tab."),
+        help_text=_("Select Device Roles that you want to have preselected in the filter tab."),
     )
     preselected_tags = forms.ModelMultipleChoiceField(
         label=_("Preselected Tags"),
         queryset=Device.tags.all(),
         required=False,
-        help_text=_("Select Tags that you want to have " "preselected in the filter tab."),
+        help_text=_("Select Tags that you want to have preselected in the filter tab."),
     )
     save_coords = forms.BooleanField(
         label=_("Save Coordinates"),
@@ -404,8 +425,7 @@ class IndividualOptionsForm(forms.ModelForm):
         required=False,
         initial=False,
         help_text=_(
-            "Displays connections between circuit terminations. "
-            "These connections are displayed as blue dashed lines."
+            "Displays connections between circuit terminations. These connections are displayed as blue dashed lines."
         ),
     )
     show_power = forms.BooleanField(
@@ -435,13 +455,5 @@ class IndividualOptionsForm(forms.ModelForm):
             "ignore_cable_type",
             "preselected_device_roles",
             "preselected_tags",
-            "save_coords",
-            "show_unconnected",
-            "show_cables",
-            "show_logical_connections",
-            "show_single_cable_logical_conns",
-            "show_neighbors",
-            "show_circuit",
-            "show_power",
-            "draw_default_layout",
+            *INDIVIDUAL_OPTIONS_BOOL_DISPLAY_FIELDS,
         ]

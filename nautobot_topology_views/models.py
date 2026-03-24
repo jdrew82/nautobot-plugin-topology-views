@@ -8,10 +8,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.templatetags.static import static
 from django.urls import reverse
-
 from nautobot.apps.models import BaseModel
 from nautobot.circuits.models import Circuit
-from nautobot.dcim.models import Device, PowerPanel, PowerFeed
+from nautobot.dcim.models import Device, PowerFeed, PowerPanel
 
 from nautobot_topology_views.utils import (
     CONF_IMAGE_DIR,
@@ -22,6 +21,8 @@ from nautobot_topology_views.utils import (
 
 
 class RoleImage(BaseModel):
+    """Mapping of a role or content type to a custom topology icon image."""
+
     class Meta:
         indexes = [
             models.Index(fields=["content_type", "object_id"]),
@@ -71,7 +72,7 @@ class RoleImage(BaseModel):
 
         return path
 
-    def get_default_image(self, dir: Path = CONF_IMAGE_DIR):
+    def get_default_image(self, image_dir: Path = CONF_IMAGE_DIR):
         """Get default image
 
         will attempt to find image in given directory with any file extension,
@@ -79,17 +80,18 @@ class RoleImage(BaseModel):
 
         fallback is `STATIC_ROOT/nautobot_topology_views/img/role-unknown.png`
         """
-        if url := find_image_url(self.model_role.name, dir):
+        if url := find_image_url(self.model_role.name, image_dir):
             return url
 
         # fallback to default role unknown image
         return image_static_url(IMAGE_DIR / "role-unknown.png")
 
-    def get_image_url(self, dir: Path = CONF_IMAGE_DIR) -> str:
+    def get_image_url(self, image_dir: Path = CONF_IMAGE_DIR) -> str:
+        """Return static URL for the configured image, or a default role image."""
         try:
             self.get_image()
         except ValueError:
-            return self.get_default_image(dir)
+            return self.get_default_image(image_dir)
         return static(f"/{self.image}")
 
 
@@ -115,8 +117,27 @@ class CoordinateGroup(BaseModel):
     def __str__(self):
         return self.name
 
-    def get_absolute_url(self):
+    def get_absolute_url(self, api=False):
+        if api:
+            return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:coordinategroup", args=[self.pk])
+
+
+def _resolve_default_coordinate_group_pk():
+    """Return primary key of the 'default' CoordinateGroup, creating it if needed."""
+    try:
+        existing = CoordinateGroup.objects.filter(name="default").first()
+        if existing:
+            return existing.pk
+        group = CoordinateGroup.objects.create(
+            name="default",
+            description="Automatically generated default group. If you delete "
+            "this group, all default coordinates are gone for good but "
+            "the group itself will be re-created.",
+        )
+        return group.pk
+    except Exception:  # pylint: disable=broad-exception-caught
+        return False
 
 
 class Coordinate(BaseModel):
@@ -138,26 +159,10 @@ class Coordinate(BaseModel):
         "Smaller values correspond to a position further up on the monitor.",
     )
 
-    def get_or_create_default_group(group_id):
-        # Default group named "default" must always exist in order to make sure
-        # that coordinate values can be stored even if no coordinate group has been
-        # selected. The default group will be added automatically if it does not exist.
-        try:
-            if CoordinateGroup.objects.filter(name="default"):
-                group = CoordinateGroup.objects.get(name="default")
-                group_id = group.pk
-            else:
-                group = CoordinateGroup(
-                    name="default",
-                    description="Automatically generated default group. If you delete "
-                    "this group, all default coordinates are gone for good but "
-                    "the group itself will be re-created.",
-                )
-                group.save()
-                group_id = group.pk
-        except:
-            return False
-        return group_id
+    @staticmethod
+    def get_or_create_default_group(_group_id=None):
+        """Ensure the shared 'default' coordinate group exists; return its pk or False."""
+        return _resolve_default_coordinate_group_pk()
 
     class Meta:
         ordering = ["group", "device"]
@@ -166,7 +171,9 @@ class Coordinate(BaseModel):
     def __str__(self):
         return f"{self.x};{self.y}"
 
-    def get_absolute_url(self):
+    def get_absolute_url(self, api=False):
+        if api:
+            return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:coordinate", args=[self.pk])
 
 
@@ -189,26 +196,10 @@ class CircuitCoordinate(BaseModel):
         "Smaller values correspond to a position further up on the monitor.",
     )
 
-    def get_or_create_default_group(group_id):
-        # Default group named "default" must always exist in order to make sure
-        # that coordinate values can be stored even if no coordinate group has been
-        # selected. The default group will be added automatically if it does not exist.
-        try:
-            if CoordinateGroup.objects.filter(name="default"):
-                group = CoordinateGroup.objects.get(name="default")
-                group_id = group.pk
-            else:
-                group = CoordinateGroup(
-                    name="default",
-                    description="Automatically generated default group. If you delete "
-                    "this group, all default coordinates are gone for good but "
-                    "the group itself will be re-created.",
-                )
-                group.save()
-                group_id = group.pk
-        except:
-            return False
-        return group_id
+    @staticmethod
+    def get_or_create_default_group(_group_id=None):
+        """Ensure the shared 'default' coordinate group exists; return its pk or False."""
+        return _resolve_default_coordinate_group_pk()
 
     class Meta:
         ordering = ["group", "device"]
@@ -217,7 +208,9 @@ class CircuitCoordinate(BaseModel):
     def __str__(self):
         return f"{self.x};{self.y}"
 
-    def get_absolute_url(self):
+    def get_absolute_url(self, api=False):
+        if api:
+            return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:circuitcoordinate", args=[self.pk])
 
 
@@ -240,26 +233,10 @@ class PowerPanelCoordinate(BaseModel):
         "Smaller values correspond to a position further up on the monitor.",
     )
 
-    def get_or_create_default_group(group_id):
-        # Default group named "default" must always exist in order to make sure
-        # that coordinate values can be stored even if no coordinate group has been
-        # selected. The default group will be added automatically if it does not exist.
-        try:
-            if CoordinateGroup.objects.filter(name="default"):
-                group = CoordinateGroup.objects.get(name="default")
-                group_id = group.pk
-            else:
-                group = CoordinateGroup(
-                    name="default",
-                    description="Automatically generated default group. If you delete "
-                    "this group, all default coordinates are gone for good but "
-                    "the group itself will be re-created.",
-                )
-                group.save()
-                group_id = group.pk
-        except:
-            return False
-        return group_id
+    @staticmethod
+    def get_or_create_default_group(_group_id=None):
+        """Ensure the shared 'default' coordinate group exists; return its pk or False."""
+        return _resolve_default_coordinate_group_pk()
 
     class Meta:
         ordering = ["group", "device"]
@@ -268,7 +245,9 @@ class PowerPanelCoordinate(BaseModel):
     def __str__(self):
         return f"{self.x};{self.y}"
 
-    def get_absolute_url(self):
+    def get_absolute_url(self, api=False):
+        if api:
+            return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:powerpanelcoordinate", args=[self.pk])
 
 
@@ -291,26 +270,10 @@ class PowerFeedCoordinate(BaseModel):
         "Smaller values correspond to a position further up on the monitor.",
     )
 
-    def get_or_create_default_group(group_id):
-        # Default group named "default" must always exist in order to make sure
-        # that coordinate values can be stored even if no coordinate group has been
-        # selected. The default group will be added automatically if it does not exist.
-        try:
-            if CoordinateGroup.objects.filter(name="default"):
-                group = CoordinateGroup.objects.get(name="default")
-                group_id = group.pk
-            else:
-                group = CoordinateGroup(
-                    name="default",
-                    description="Automatically generated default group. If you delete "
-                    "this group, all default coordinates are gone for good but "
-                    "the group itself will be re-created.",
-                )
-                group.save()
-                group_id = group.pk
-        except:
-            return False
-        return group_id
+    @staticmethod
+    def get_or_create_default_group(_group_id=None):
+        """Ensure the shared 'default' coordinate group exists; return its pk or False."""
+        return _resolve_default_coordinate_group_pk()
 
     class Meta:
         ordering = ["group", "device"]
@@ -319,11 +282,28 @@ class PowerFeedCoordinate(BaseModel):
     def __str__(self):
         return f"{self.x};{self.y}"
 
-    def get_absolute_url(self):
+    def get_absolute_url(self, api=False):
+        if api:
+            return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:powerfeedcoordinate", args=[self.pk])
 
 
+INDIVIDUAL_OPTIONS_BOOL_DISPLAY_FIELDS = (
+    "save_coords",
+    "show_unconnected",
+    "show_cables",
+    "show_logical_connections",
+    "show_single_cable_logical_conns",
+    "show_neighbors",
+    "show_circuit",
+    "show_power",
+    "draw_default_layout",
+)
+
+
 class IndividualOptions(BaseModel):
+    """Per-user display preferences for the topology view."""
+
     CHOICES = (
         ("interface", "interface"),
         ("front port", "front port"),
@@ -361,5 +341,5 @@ class IndividualOptions(BaseModel):
     show_power = models.BooleanField(default=False)
     draw_default_layout = models.BooleanField(default=False)
 
-    def __str___(self):
+    def __str__(self):
         return f"{self.user_id}"

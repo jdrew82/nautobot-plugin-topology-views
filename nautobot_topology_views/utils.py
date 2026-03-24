@@ -1,21 +1,20 @@
 """Utility functions and helpers for nautobot_topology_views."""
 
+import base64
+import xml.dom.minidom
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Type
-import base64
-import xml.dom.minidom
 from urllib.parse import urlparse
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.staticfiles.finders import find as staticfiles_find
 from django.db.models import Model
+from django.forms.models import ModelChoiceIterator
 from django.templatetags.static import static
 from django.utils.text import camel_case_to_spaces, re_camel_case
-from django.contrib import messages
-
-from django.forms.models import ModelChoiceIterator
 
 IMAGE_FILETYPES = (
     "apng",
@@ -100,19 +99,19 @@ def _ensure_absolute(url: str) -> str:
 
 
 def get_image_from_url(url: str) -> str:
+    """Strip STATIC_URL prefix from a URL when present; otherwise return as-is."""
     if url.startswith(settings.STATIC_URL):
-        url_new = url[len(settings.STATIC_URL) :]
-        return url_new
-    else:
-        return url
+        return url[len(settings.STATIC_URL) :]
+    return url
 
 
-def find_image_in_dir(name: str, dir: Path):
-    if not dir.is_dir():
+def find_image_in_dir(name: str, image_dir: Path):
+    """Return first matching image file for name under image_dir (or image_dir/img)."""
+    if not image_dir.is_dir():
         return None
     # Try exact name, then lowercased, then slugified (spaces → hyphens)
     candidates = [name, name.lower(), name.lower().replace(" ", "-")]
-    for search_dir in [dir / "img", dir]:
+    for search_dir in [image_dir / "img", image_dir]:
         if not search_dir.is_dir():
             continue
         for candidate in candidates:
@@ -126,20 +125,20 @@ def find_image_in_dir(name: str, dir: Path):
 
 
 @lru_cache(maxsize=50)
-def find_image_url(glob: str, dir: Path = CONF_IMAGE_DIR):
+def find_image_url(name: str, image_dir: Path = CONF_IMAGE_DIR):
     """
     will attempt to find a file that matches glob in given directory with any file extension,
     otherwise will try to find a `role-unknown` image
 
     returns static file url
     """
-    if file := find_image_in_dir(glob, dir):
+    if file := find_image_in_dir(name, image_dir):
         return image_static_url(file)
 
-    if glob != "role-unknown" and (file := find_image_in_dir("role-unknown", dir)):
+    if name != "role-unknown" and (file := find_image_in_dir("role-unknown", image_dir)):
         return image_static_url(file)
 
-    if dir != IMAGE_DIR and (file := find_image_in_dir("role-unknown", IMAGE_DIR)):
+    if image_dir != IMAGE_DIR and (file := find_image_in_dir("role-unknown", IMAGE_DIR)):
         return image_static_url(file)
 
     return ""
@@ -147,23 +146,34 @@ def find_image_url(glob: str, dir: Path = CONF_IMAGE_DIR):
 
 @dataclass
 class ModelRole:
+    """Lightweight representation of a model's role for image lookup."""
+
     name: str
 
 
 def get_model_slug(model: Type[Model]):
+    """Return a hyphenated slug derived from the model class name."""
     return camel_case_to_spaces(model.__name__).replace(" ", "-")
 
 
 def get_model_role(model: Type[Model]) -> ModelRole:
+    """Return a display-oriented role name for non-Device models (image lookup)."""
     return ModelRole(
         name=re_camel_case.sub(r" \1", model.__name__),
     )
 
 
-def get_query_settings(request):
+def _request_query_dict(request):
+    """Return Django ``GET`` or DRF ``query_params`` for the request."""
+    return getattr(request, "query_params", request.GET)
+
+
+def get_query_settings(request):  # pylint: disable=too-many-branches
+    """Parse topology display/save flags from request GET parameters."""
+    params = _request_query_dict(request)
     save_coords = False
-    if "save_coords" in request.GET:
-        if request.GET["save_coords"] == "on":
+    if "save_coords" in params:
+        if params["save_coords"] == "on":
             save_coords = True
     # General options overrides
     if save_coords is True and settings.PLUGINS_CONFIG["nautobot_topology_views"]["allow_coordinates_saving"] is False:
@@ -174,38 +184,38 @@ def get_query_settings(request):
 
     # Individual options
     show_unconnected = False
-    if "show_unconnected" in request.GET:
-        if request.GET["show_unconnected"] == "on":
+    if "show_unconnected" in params:
+        if params["show_unconnected"] == "on":
             show_unconnected = True
 
     show_power = False
-    if "show_power" in request.GET:
-        if request.GET["show_power"] == "on":
+    if "show_power" in params:
+        if params["show_power"] == "on":
             show_power = True
 
     show_circuit = False
-    if "show_circuit" in request.GET:
-        if request.GET["show_circuit"] == "on":
+    if "show_circuit" in params:
+        if params["show_circuit"] == "on":
             show_circuit = True
 
     show_logical_connections = False
-    if "show_logical_connections" in request.GET:
-        if request.GET["show_logical_connections"] == "on":
+    if "show_logical_connections" in params:
+        if params["show_logical_connections"] == "on":
             show_logical_connections = True
 
     show_single_cable_logical_conns = False
-    if "show_single_cable_logical_conns" in request.GET:
-        if request.GET["show_single_cable_logical_conns"] == "on":
+    if "show_single_cable_logical_conns" in params:
+        if params["show_single_cable_logical_conns"] == "on":
             show_single_cable_logical_conns = True
 
     show_cables = False
-    if "show_cables" in request.GET:
-        if request.GET["show_cables"] == "on":
+    if "show_cables" in params:
+        if params["show_cables"] == "on":
             show_cables = True
 
     show_neighbors = False
-    if "show_neighbors" in request.GET:
-        if request.GET["show_neighbors"] == "on":
+    if "show_neighbors" in params:
+        if params["show_neighbors"] == "on":
             show_neighbors = True
 
     return (
@@ -220,12 +230,42 @@ def get_query_settings(request):
     )
 
 
-class LinePattern:
+def topology_request_flags(request):
+    """Build keyword arguments for ``get_topology_data`` from a Django or DRF request."""
+    (
+        save_coords,
+        show_unconnected,
+        show_power,
+        show_circuit,
+        show_logical_connections,
+        show_single_cable_logical_conns,
+        show_cables,
+        show_neighbors,
+    ) = get_query_settings(request)
+    qs = _request_query_dict(request)
+    group_id = "default" if "group" not in qs else qs["group"]
+    return {
+        "show_unconnected": show_unconnected,
+        "save_coords": save_coords,
+        "show_cables": show_cables,
+        "show_circuit": show_circuit,
+        "show_logical_connections": show_logical_connections,
+        "show_single_cable_logical_conns": show_single_cable_logical_conns,
+        "show_neighbors": show_neighbors,
+        "show_power": show_power,
+        "group_id": group_id,
+    }
+
+
+class LinePattern:  # pylint: disable=too-few-public-methods
+    """Dash patterns for vis.js edge rendering."""
+
     power = [5, 5, 3, 3]
     logical = [1, 10, 1, 10]
 
 
-def export_data_to_xml(data: dict):
+def export_data_to_xml(data: dict):  # pylint: disable=too-many-branches,too-many-statements
+    """Serialize topology nodes/edges to draw.io-compatible mxGraph XML."""
     if data is None:
         return ""
 
@@ -280,9 +320,9 @@ def export_data_to_xml(data: dict):
     for edge in data["edges"]:
         dashes = ""
         if "dashes" in edge:
-            if edge["dashes"] == LinePattern().power:
+            if edge["dashes"] == LinePattern.power:
                 dashes = "dashed=1;dashPattern=6 6;"
-            if edge["dashes"] == LinePattern().logical:
+            if edge["dashes"] == LinePattern.logical:
                 dashes = "dashed=1;dashPattern=1 4;strokeWidth=2;"
 
         mxcell = doc.createElement("mxCell")
@@ -308,8 +348,8 @@ def export_data_to_xml(data: dict):
         mxcell.appendChild(mxgeometry)
 
     # nodes
-    noPositionX = 0
-    noPositionY = 1000
+    no_position_x = 0
+    no_position_y = 1000
     for node in data["nodes"]:
         with open(settings.STATIC_ROOT + "/" + get_image_from_url(node["image"]), "rb") as img:
             svg = base64.b64encode(img.read()).decode("utf-8")
@@ -334,17 +374,17 @@ def export_data_to_xml(data: dict):
             mxgeometry.setAttribute("x", str(node["x"]))
         else:
             # Set next pseudo coordinates
-            if noPositionX > 2500:
-                noPositionX = 100
-                noPositionY = noPositionY + 100
+            if no_position_x > 2500:
+                no_position_x = 100
+                no_position_y = no_position_y + 100
             else:
-                noPositionX = noPositionX + 100
+                no_position_x = no_position_x + 100
 
-            mxgeometry.setAttribute("x", str(noPositionX))
+            mxgeometry.setAttribute("x", str(no_position_x))
         if "y" in node:
             mxgeometry.setAttribute("y", str(node["y"]))
         else:
-            mxgeometry.setAttribute("y", str(noPositionY))
+            mxgeometry.setAttribute("y", str(no_position_y))
 
         mxgeometry.setAttribute("width", "50")
         mxgeometry.setAttribute("height", "50")
@@ -353,7 +393,7 @@ def export_data_to_xml(data: dict):
         mxcell.appendChild(mxgeometry)
 
     # Place a warning if one or more icons are misplaced because of missing coordinates
-    if noPositionX > 0:
+    if no_position_x > 0:
         mxcell = doc.createElement("mxCell")
         mxcell.setAttribute("id", "noPositionWarning")
         mxcell.setAttribute(
@@ -416,7 +456,7 @@ def get_selected_values(form, field_name):
         return [str(filter_data)]
 
     # Model choice field
-    if type(field.choices) is ModelChoiceIterator:
+    if isinstance(field.choices, ModelChoiceIterator):
         # If this is a single-choice field, wrap its value in a list
         if not hasattr(filter_data, "__iter__"):
             values = [filter_data]
@@ -426,7 +466,7 @@ def get_selected_values(form, field_name):
     else:
         # Static selection field
         choices = unpack_grouped_choices(field.choices)
-        if type(filter_data) not in (list, tuple):
+        if not isinstance(filter_data, (list, tuple)):
             filter_data = [filter_data]  # Ensure filter data is iterable
         values = [label for value, label in choices if str(value) in filter_data or None in filter_data]
 
