@@ -16,8 +16,6 @@ class NautobotTopologyViewsConfig(NautobotAppConfig):
     author_email = "info@networktocode.com"
     base_url = "nautobot-topology-views"
     required_settings = []
-    min_version = "2.0.0"
-    max_version = "2.9999"
     default_settings = {
         "allow_coordinates_saving": False,
         "always_save_coordinates": False,
