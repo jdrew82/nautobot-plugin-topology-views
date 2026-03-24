@@ -187,7 +187,9 @@ class Command(BaseCommand):
         self.stdout.write("Creating demo topology data...")
 
         # -- Tag --
-        demo_tag, _ = Tag.objects.get_or_create(name=DEMO_TAG_NAME, defaults={"description": "Auto-generated demo data for Topology Views"})
+        demo_tag, _ = Tag.objects.get_or_create(
+            name=DEMO_TAG_NAME, defaults={"description": "Auto-generated demo data for Topology Views"}
+        )
         # Ensure tag applies to all the content types we need
         for model_cls in (Device, Location, Rack, Cable, Circuit, IPAddress, Prefix):
             ct = ContentType.objects.get_for_model(model_cls)
@@ -352,9 +354,7 @@ class Command(BaseCommand):
             spine_port_idx = {s.pk: 1 for s in spines}
             for spine in spines:
                 for leaf_idx, leaf in enumerate(leafs):
-                    spine_iface = spine.interfaces.filter(
-                        name=f"Ethernet1/{spine_port_idx[spine.pk]}"
-                    ).first()
+                    spine_iface = spine.interfaces.filter(name=f"Ethernet1/{spine_port_idx[spine.pk]}").first()
                     # Leaf uplinks use ports 49+ (40GE)
                     uplink_port = 49 + (spines.index(spine))
                     leaf_iface = leaf.interfaces.filter(name=f"Ethernet{uplink_port}").first()
@@ -540,8 +540,10 @@ class Command(BaseCommand):
         # Summary
         # ------------------------------------------------------------------
         total_cables = cable_count + wan_cable_count + uplink_count
-        self.stdout.write(self.style.SUCCESS(
-            f"\nDemo topology created successfully!\n"
-            f"  {len(SITES)} sites, {len(all_devices)} devices, {total_cables} cables, 2 circuits\n"
-            f"  All objects tagged with '{DEMO_TAG_NAME}' — use --flush to remove."
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"\nDemo topology created successfully!\n"
+                f"  {len(SITES)} sites, {len(all_devices)} devices, {total_cables} cables, 2 circuits\n"
+                f"  All objects tagged with '{DEMO_TAG_NAME}' — use --flush to remove."
+            )
+        )

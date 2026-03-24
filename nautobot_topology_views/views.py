@@ -363,9 +363,7 @@ def get_topology_data(
                 device_ids.append(cable_peer.device.id)
 
         if show_logical_connections:
-            path_complete_interfaces = Interface.objects.filter(
-                Q(_path__is_active=True) & Q(device_id__in=device_ids)
-            )
+            path_complete_interfaces = Interface.objects.filter(Q(_path__is_active=True) & Q(device_id__in=device_ids))
             for path_complete_interface in path_complete_interfaces:
                 connected = path_complete_interface.connected_endpoint
                 if connected is not None and type(connected) != ProviderNetwork:

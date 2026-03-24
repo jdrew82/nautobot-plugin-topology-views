@@ -75,7 +75,7 @@ def image_static_url(path: Path) -> str:
     # e.g. .../static/nautobot_topology_views/img/foo.svg → nautobot_topology_views/img/foo.svg
     for i, part in enumerate(parts):
         if part == "static" and i + 1 < len(parts) and parts[i + 1] == "nautobot_topology_views":
-            url = static(str(Path(*parts[i + 1:])))
+            url = static(str(Path(*parts[i + 1 :])))
             return _ensure_absolute(url)
 
     # For STATIC_ROOT paths (no 'static' parent), find the last 'nautobot_topology_views'
