@@ -1,3 +1,5 @@
+"""REST API URL definitions for nautobot_topology_views."""
+
 from nautobot.core.api.routers import OrderedDefaultRouter
 
 from nautobot_topology_views.api import views

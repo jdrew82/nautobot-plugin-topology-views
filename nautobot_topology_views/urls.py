@@ -1,3 +1,5 @@
+"""URL definitions for nautobot_topology_views."""
+
 from django.urls import path
 from nautobot.extras.views import ObjectChangeLogView
 

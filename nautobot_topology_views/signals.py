@@ -1,3 +1,5 @@
+"""Signal handlers for nautobot_topology_views."""
+
 from typing import Type
 
 from django.contrib.contenttypes.models import ContentType

@@ -1,3 +1,5 @@
+"""Custom template tags for nautobot_topology_views."""
+
 from django import template
 from django.urls import NoReverseMatch, reverse
 

@@ -1,3 +1,5 @@
+"""Template extension definitions for nautobot_topology_views."""
+
 from nautobot.extras.plugins import TemplateExtension
 
 
