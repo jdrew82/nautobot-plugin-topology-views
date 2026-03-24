@@ -1,23 +1,18 @@
-from urllib.parse import quote
-import json
 from django import template
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from nautobot_topology_views.utils import get_selected_values
 
 register = template.Library()
 
 
-@register.inclusion_tag("helpers/applied_filters.html", takes_context=True)
+@register.inclusion_tag("nautobot_topology_views/inc/applied_filters.html", takes_context=True)
 def applied_filters(context, model, form, query_params):
-    """
-    Display the active filters for a given filter form.
-    """
+    """Display the active filters for a given filter form."""
     user = context["request"].user
     form.is_valid()  # Ensure cleaned_data has been set
 
-    applied_filters = []
+    active_filters = []
     for filter_name in form.changed_data:
         if filter_name not in form.cleaned_data:
             continue
@@ -30,7 +25,7 @@ def applied_filters(context, model, form, query_params):
         querydict.pop(filter_name)
         display_value = ", ".join([str(v) for v in get_selected_values(form, filter_name)])
 
-        applied_filters.append(
+        active_filters.append(
             {
                 "name": filter_name,
                 "value": form.cleaned_data[filter_name],
@@ -39,14 +34,16 @@ def applied_filters(context, model, form, query_params):
             }
         )
 
-    save_link = None
-    if user.has_perm("extras.add_savedfilter") and "filter_id" not in context["request"].GET:
-        content_type = ContentType.objects.get_for_model(model).pk
-        parameters = json.dumps(dict(context["request"].GET.lists()))
-        url = reverse("extras:savedfilter_add")
-        save_link = f"{url}?content_types={content_type}&parameters={quote(parameters)}"
+    # Nautobot 3 replaced Saved Filters with Saved Views (extras:savedview_*). Creating a view
+    # requires POST from the list-view modal, so we only link to management UI here.
+    saved_views_link = None
+    if user.has_perm("extras.view_savedview") and "saved_view" not in context["request"].GET:
+        try:
+            saved_views_link = reverse("extras:savedview_list")
+        except NoReverseMatch:
+            saved_views_link = None
 
     return {
-        "applied_filters": applied_filters,
-        "save_link": save_link,
+        "applied_filters": active_filters,
+        "saved_views_link": saved_views_link,
     }

@@ -22,10 +22,10 @@ from nautobot_topology_views.models import (
 )
 
 
-class DeviceFilterForm(TenancyFilterForm, NautobotModelForm):
-    class Meta:
-        model = Device
-        fields = "__all__"
+class DeviceFilterForm(TenancyFilterForm, NautobotFilterForm):
+    """Filter-only form for topology device query params (not a Device ModelForm)."""
+
+    model = Device
 
     # default_renderer = forms.renderers.DjangoTemplates()
     # fieldsets = (
@@ -144,7 +144,7 @@ class DeviceFilterForm(TenancyFilterForm, NautobotModelForm):
         required=False, label=_("Virtual chassis member"), widget=forms.Select(choices=BOOLEAN_WITH_BLANK_CHOICES)
     )
 
-    tag = TagFilterField(Meta.model)
+    tag = TagFilterField(Device)
 
     # options
     save_coords = forms.BooleanField(
@@ -289,7 +289,7 @@ class CoordinatesFilterForm(NautobotFilterForm):
     y = forms.IntegerField(required=False)
 
 
-class IndividualOptionsForm(NautobotFilterForm):
+class IndividualOptionsForm(forms.ModelForm):
     fieldsets = (
         (
             None,

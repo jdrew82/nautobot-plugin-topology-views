@@ -14,7 +14,7 @@ from nautobot.dcim.models import (
 )
 from nautobot.extras.filters import NautobotFilterSet
 from nautobot.extras.models import Role
-from nautobot.tenancy.filters import TenancyFilterSet
+from nautobot.tenancy.filter_mixins import TenancyModelFilterSetMixin
 from nautobot.core.filters import TreeNodeMultipleChoiceFilter, MultiValueCharFilter, MultiValueMACAddressFilter
 from nautobot_topology_views.models import (
     CoordinateGroup,
@@ -25,7 +25,7 @@ from nautobot_topology_views.models import (
 )
 
 
-class DeviceFilterSet(NautobotFilterSet, TenancyFilterSet):
+class DeviceFilterSet(NautobotFilterSet, TenancyModelFilterSetMixin):
     q = django_filters.CharFilter(
         method="search",
         label="Search",

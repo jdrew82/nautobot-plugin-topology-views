@@ -7,28 +7,13 @@ import xml.dom.minidom
 from urllib.parse import urlparse
 
 from django.conf import settings
+from django.contrib.staticfiles.finders import find as staticfiles_find
 from django.db.models import Model
 from django.templatetags.static import static
 from django.utils.text import camel_case_to_spaces, re_camel_case
 from django.contrib import messages
 
 from django.forms.models import ModelChoiceIterator
-
-IMAGE_DIR = Path(settings.STATIC_ROOT) / "nautobot_topology_views"
-CONF_IMAGE_DIR: Path = Path(settings.STATIC_ROOT) / "nautobot_topology_views"
-
-
-def image_static_url(path: Path) -> str:
-    return static(f"/{path.relative_to(Path(settings.STATIC_ROOT))}")
-
-
-def get_image_from_url(url: str) -> str:
-    if url.startswith(settings.STATIC_URL):
-        url_new = url[len(settings.STATIC_URL) :]
-        return url_new
-    else:
-        return url
-
 
 IMAGE_FILETYPES = (
     "apng",
@@ -47,12 +32,76 @@ IMAGE_FILETYPES = (
     "webp",
 )
 
+# App-relative path prefix for image lookup
+_IMG_STATIC_PREFIX = "nautobot_topology_views/img"
+
+
+def _get_image_dirs():
+    """Return (IMAGE_DIR, CONF_IMAGE_DIR) resolving to the actual directory on disk.
+
+    Uses STATIC_ROOT if it contains our images, otherwise falls back to the app's
+    source static directory (works with runserver in dev mode).
+    """
+    static_root_dir = Path(settings.STATIC_ROOT) / "nautobot_topology_views" if settings.STATIC_ROOT else None
+
+    # If STATIC_ROOT has our images (collectstatic was run), use it
+    if static_root_dir and static_root_dir.is_dir() and any(static_root_dir.iterdir()):
+        return static_root_dir, static_root_dir
+
+    # Fallback: find the app's source static directory via staticfiles finders
+    found = staticfiles_find(f"{_IMG_STATIC_PREFIX}/role-unknown.svg")
+    if found:
+        app_img_dir = Path(found).parent.parent  # go up from img/ to nautobot_topology_views/
+        return app_img_dir, app_img_dir
+
+    # Last resort: return STATIC_ROOT path even if empty
+    fallback = Path(settings.STATIC_ROOT or ".") / "nautobot_topology_views"
+    return fallback, fallback
+
+
+IMAGE_DIR, CONF_IMAGE_DIR = _get_image_dirs()
+
+
+def image_static_url(path: Path) -> str:
+    """Convert an absolute filesystem path to a Django static URL.
+
+    Extracts the portion starting with 'nautobot_topology_views/...' and
+    passes it to Django's ``static()`` helper so it works regardless of
+    whether STATIC_ROOT has been collected or we're serving from the app's
+    source ``static/`` directory.
+    """
+    # Walk the path parts to find 'nautobot_topology_views' — everything
+    # from that component onward is the static-relative path.
+    parts = path.parts
+    for i, part in enumerate(parts):
+        if part == "nautobot_topology_views" and i + 1 < len(parts):
+            return static(str(Path(*parts[i:])))
+
+    # Fallback: just use the filename under the default img prefix
+    return static(f"nautobot_topology_views/img/{path.name}")
+
+
+def get_image_from_url(url: str) -> str:
+    if url.startswith(settings.STATIC_URL):
+        url_new = url[len(settings.STATIC_URL) :]
+        return url_new
+    else:
+        return url
+
 
 def find_image_in_dir(glob: str, dir: Path):
-    return next(
-        (f for f in dir.glob(f"{glob}.*") if f.suffix.lstrip(".") in IMAGE_FILETYPES),
-        None,
-    )
+    if not dir.is_dir():
+        return None
+    # Search in img/ subdirectory first, then in the directory itself
+    for search_dir in [dir / "img", dir]:
+        if search_dir.is_dir():
+            result = next(
+                (f for f in search_dir.glob(f"{glob}.*") if f.suffix.lstrip(".") in IMAGE_FILETYPES),
+                None,
+            )
+            if result:
+                return result
+    return None
 
 
 @lru_cache(maxsize=50)
