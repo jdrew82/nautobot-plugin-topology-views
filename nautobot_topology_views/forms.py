@@ -167,7 +167,7 @@ class DeviceFilterForm(TenancyFilterForm, NautobotFilterForm):
     show_power = forms.BooleanField(label=_("Show Power Feeds"), required=False, initial=False)
 
 
-class CoordinateGroupsForm(NautobotModelForm):
+class CoordinateGroupsForm(forms.ModelForm):
     fieldsets = (("Group Details", ("name", "description")),)
 
     class Meta:
@@ -175,13 +175,13 @@ class CoordinateGroupsForm(NautobotModelForm):
         fields = ("name", "description")
 
 
-class CoordinateGroupsImportForm(NautobotModelForm):
+class CoordinateGroupsImportForm(forms.ModelForm):
     class Meta:
         model = CoordinateGroup
         fields = ("name", "description")
 
 
-class CircuitCoordinatesForm(NautobotModelForm):
+class CircuitCoordinatesForm(forms.ModelForm):
     fieldsets = (("CircuitCoordinate", ("group", "device", "x", "y")),)
 
     class Meta:
@@ -189,7 +189,7 @@ class CircuitCoordinatesForm(NautobotModelForm):
         fields = ("group", "device", "x", "y")
 
 
-class PowerPanelCoordinatesForm(NautobotModelForm):
+class PowerPanelCoordinatesForm(forms.ModelForm):
     fieldsets = (("PowerPanel", ("group", "device", "x", "y")),)
 
     class Meta:
@@ -197,7 +197,7 @@ class PowerPanelCoordinatesForm(NautobotModelForm):
         fields = ("group", "device", "x", "y")
 
 
-class PowerFeedCoordinatesForm(NautobotModelForm):
+class PowerFeedCoordinatesForm(forms.ModelForm):
     fieldsets = (("PowerFeedCoordinate", ("group", "device", "x", "y")),)
 
     class Meta:
@@ -205,7 +205,7 @@ class PowerFeedCoordinatesForm(NautobotModelForm):
         fields = ("group", "device", "x", "y")
 
 
-class CoordinatesForm(NautobotModelForm):
+class CoordinatesForm(forms.ModelForm):
     fieldsets = (("Coordinate", ("group", "device", "x", "y")),)
 
     class Meta:
@@ -213,25 +213,25 @@ class CoordinatesForm(NautobotModelForm):
         fields = ("group", "device", "x", "y")
 
 
-class CircuitCoordinatesImportForm(NautobotModelForm):
+class CircuitCoordinatesImportForm(forms.ModelForm):
     class Meta:
         model = CircuitCoordinate
         fields = ("group", "device", "x", "y")
 
 
-class PowerPanelCoordinatesImportForm(NautobotModelForm):
+class PowerPanelCoordinatesImportForm(forms.ModelForm):
     class Meta:
         model = PowerPanelCoordinate
         fields = ("group", "device", "x", "y")
 
 
-class PowerFeedCoordinatesImportForm(NautobotModelForm):
+class PowerFeedCoordinatesImportForm(forms.ModelForm):
     class Meta:
         model = PowerFeedCoordinate
         fields = ("group", "device", "x", "y")
 
 
-class CoordinatesImportForm(NautobotModelForm):
+class CoordinatesImportForm(forms.ModelForm):
     class Meta:
         model = Coordinate
         fields = ("group", "device", "x", "y")
