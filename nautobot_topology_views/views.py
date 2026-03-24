@@ -797,8 +797,7 @@ class CircuitCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.add_coordinate"
 
     queryset = CircuitCoordinate.objects.all()
-    form = CircuitCoordinatesForm
-    template_name = "nautobot_topology_views/circuitcoordinate_add.html"
+    model_form = CircuitCoordinatesForm
 
 
 class CircuitCoordinateBulkImportView(BulkImportView):
@@ -811,7 +810,6 @@ class CircuitCoordinateListView(PermissionRequiredMixin, ObjectListView):
 
     queryset = CircuitCoordinate.objects.all()
     table = CircuitCoordinateListTable
-    template_name = "nautobot_topology_views/circuitcoordinate_list.html"
     filterset = CircuitCoordinatesFilterSet
     filterset_form = CircuitCoordinatesFilterForm
 
@@ -820,8 +818,7 @@ class CircuitCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = CircuitCoordinate.objects.all()
-    form = CircuitCoordinatesForm
-    template_name = "nautobot_topology_views/circuitcoordinate_edit.html"
+    model_form = CircuitCoordinatesForm
 
 
 class CircuitCoordinateDeleteView(PermissionRequiredMixin, ObjectDeleteView):
@@ -840,8 +837,7 @@ class PowerPanelCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.add_coordinate"
 
     queryset = PowerPanelCoordinate.objects.all()
-    form = PowerPanelCoordinatesForm
-    template_name = "nautobot_topology_views/powerpanelcoordinate_add.html"
+    model_form = PowerPanelCoordinatesForm
 
 
 class PowerPanelCoordinateBulkImportView(BulkImportView):
@@ -854,7 +850,6 @@ class PowerPanelCoordinateListView(PermissionRequiredMixin, ObjectListView):
 
     queryset = PowerPanelCoordinate.objects.all()
     table = PowerPanelCoordinateListTable
-    template_name = "nautobot_topology_views/powerpanelcoordinate_list.html"
     filterset = PowerPanelCoordinatesFilterSet
     filterset_form = PowerPanelCoordinatesFilterForm
 
@@ -863,8 +858,7 @@ class PowerPanelCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = PowerPanelCoordinate.objects.all()
-    form = PowerPanelCoordinatesForm
-    template_name = "nautobot_topology_views/powerpanelcoordinate_edit.html"
+    model_form = PowerPanelCoordinatesForm
 
 
 class PowerPanelCoordinateDeleteView(PermissionRequiredMixin, ObjectDeleteView):
@@ -883,8 +877,7 @@ class PowerFeedCoordinateAddView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.add_coordinate"
 
     queryset = PowerFeedCoordinate.objects.all()
-    form = PowerFeedCoordinatesForm
-    template_name = "nautobot_topology_views/powerfeedcoordinate_add.html"
+    model_form = PowerFeedCoordinatesForm
 
 
 class PowerFeedCoordinateBulkImportView(BulkImportView):
@@ -897,7 +890,6 @@ class PowerFeedCoordinateListView(PermissionRequiredMixin, ObjectListView):
 
     queryset = PowerFeedCoordinate.objects.all()
     table = PowerFeedCoordinateListTable
-    template_name = "nautobot_topology_views/powerfeedcoordinate_list.html"
     filterset = PowerFeedCoordinatesFilterSet
     filterset_form = PowerFeedCoordinatesFilterForm
 
@@ -906,8 +898,7 @@ class PowerFeedCoordinateEditView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = PowerFeedCoordinate.objects.all()
-    form = PowerFeedCoordinatesForm
-    template_name = "nautobot_topology_views/powerfeedcoordinate_edit.html"
+    model_form = PowerFeedCoordinatesForm
 
 
 class PowerFeedCoordinateDeleteView(PermissionRequiredMixin, ObjectDeleteView):
@@ -926,8 +917,7 @@ class CoordinateAddView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.add_coordinate"
 
     queryset = Coordinate.objects.all()
-    form = CoordinatesForm
-    template_name = "nautobot_topology_views/coordinate_add.html"
+    model_form = CoordinatesForm
 
 
 class CoordinateBulkImportView(BulkImportView):
@@ -940,7 +930,6 @@ class CoordinateListView(PermissionRequiredMixin, ObjectListView):
 
     queryset = Coordinate.objects.all()
     table = CoordinateListTable
-    template_name = "nautobot_topology_views/coordinate_list.html"
     filterset = CoordinatesFilterSet
     filterset_form = CoordinatesFilterForm
 
@@ -949,8 +938,7 @@ class CoordinateEditView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.change_coordinate"
 
     queryset = Coordinate.objects.all()
-    form = CoordinatesForm
-    template_name = "nautobot_topology_views/coordinate_edit.html"
+    model_form = CoordinatesForm
 
 
 class CoordinateDeleteView(PermissionRequiredMixin, ObjectDeleteView):
@@ -965,20 +953,13 @@ class CoordinateGroupView(PermissionRequiredMixin, ObjectView):
     queryset = CoordinateGroup.objects.all()
 
     def get_extra_context(self, request, instance):
-        circuittable = CircuitCoordinateListTable(instance.circuitcoordinate_set.all())
-        circuittable.configure(request)
-        powerpaneltable = PowerPanelCoordinateListTable(instance.powerpanelcoordinate_set.all())
-        powerpaneltable.configure(request)
-        powerfeedtable = PowerFeedCoordinateListTable(instance.powerfeedcoordinate_set.all())
-        powerfeedtable.configure(request)
-        table = CoordinateListTable(instance.coordinate_set.all())
-        table.configure(request)
-
         return {
-            "circuitcoordinates_table": circuittable,
-            "powerpanelcoordinates_table": powerpaneltable,
-            "powerfeedcoordinates_table": powerfeedtable,
-            "coordinates_table": table,
+            "coordinate_tables": [
+                ("Circuit Coordinates", instance.circuitcoordinate_set.all()),
+                ("Power Panel Coordinates", instance.powerpanelcoordinate_set.all()),
+                ("Power Feed Coordinates", instance.powerfeedcoordinate_set.all()),
+                ("Device Coordinates", instance.coordinate_set.all()),
+            ],
         }
 
 
@@ -986,8 +967,7 @@ class CoordinateGroupAddView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.add_coordinategroup"
 
     queryset = CoordinateGroup.objects.all()
-    form = CoordinateGroupsForm
-    template_name = "nautobot_topology_views/coordinategroup_add.html"
+    model_form = CoordinateGroupsForm
 
 
 class CoordinateGroupBulkImportView(BulkImportView):
@@ -1000,15 +980,13 @@ class CoordinateGroupListView(PermissionRequiredMixin, ObjectListView):
 
     queryset = CoordinateGroup.objects.annotate(devices=Count("coordinate"))
     table = CoordinateGroupListTable
-    template_name = "nautobot_topology_views/coordinategroup_list.html"
 
 
 class CoordinateGroupEditView(PermissionRequiredMixin, ObjectEditView):
     permission_required = "nautobot_topology_views.change_coordinategroup"
 
     queryset = CoordinateGroup.objects.all()
-    form = CoordinateGroupsForm
-    template_name = "nautobot_topology_views/coordinategroup_edit.html"
+    model_form = CoordinateGroupsForm
 
 
 class CoordinateGroupDeleteView(PermissionRequiredMixin, ObjectDeleteView):

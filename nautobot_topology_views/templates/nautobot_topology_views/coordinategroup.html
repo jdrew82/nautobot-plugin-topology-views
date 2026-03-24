@@ -1,69 +1,35 @@
-{% extends 'generic/object.html' %}
-{% load helpers %}
-{% load plugins %}
-{% load render_table from django_tables2 %}
+{% extends 'generic/object_retrieve.html' %}
 
-{% block title %}Topology Views Coordinate Group{% endblock title %}
-
-{% block content %}
-<div class="row mb-3">
-	<div class="col col-md-6">
-    <div class="card">
-      <h5 class="card-header">
-        Coordinate Group
-      </h5>
-      <div class="card-body">
-        <table class="table table-hover attr-table">
-          <tr>
-            <th scope="row">Name</th>
-            <td>{{ object.name }}</td>
-          </tr>
-          <tr>
-            <th scope="row">Description</th>
-            <td>{{ object.description|placeholder }}</td>
-          </tr>
+{% block content_full_width_page %}
+  {% for table_label, table_data in coordinate_tables %}
+    <div class="card mb-3">
+      <h5 class="card-header">{{ table_label }}</h5>
+      <div class="card-body table-responsive">
+        {% if table_data %}
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th>Device</th>
+              <th>X</th>
+              <th>Y</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in table_data %}
+            <tr>
+              <td>{{ row.group }}</td>
+              <td>{{ row.device }}</td>
+              <td>{{ row.x }}</td>
+              <td>{{ row.y }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
         </table>
+        {% else %}
+        <p class="text-muted">None</p>
+        {% endif %}
       </div>
     </div>
-    {% plugin_left_page object %}
-  </div>
-	<div class="col col-md-6">
-    {% include 'inc/panels/custom_fields.html' %}
-    {% plugin_right_page object %}
-	</div>
-</div>
-<div class="row mb-3">
-  <div class="col col-md-12">
-    <div class="card">
-      <h5 class="card-header">Circuit Coordinates</h5>
-      <div class="card-body table-responsive">
-        {% render_table circuitcoordinates_table %}
-      </div>
-    </div>
-  </div>
-  <div class="col col-md-12">
-    <div class="card">
-      <h5 class="card-header">Power Panel Coordinates</h5>
-      <div class="card-body table-responsive">
-        {% render_table powerpanelcoordinates_table %}
-      </div>
-    </div>
-  </div>
-  <div class="col col-md-12">
-    <div class="card">
-      <h5 class="card-header">Power Feed Coordinates</h5>
-      <div class="card-body table-responsive">
-        {% render_table powerfeedcoordinates_table %}
-      </div>
-    </div>
-  </div>
-  <div class="col col-md-12">
-    <div class="card">
-      <h5 class="card-header">Device Coordinates</h5>
-      <div class="card-body table-responsive">
-        {% render_table coordinates_table %}
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock content %}
+  {% endfor %}
+{% endblock content_full_width_page %}
