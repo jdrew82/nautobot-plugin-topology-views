@@ -1,48 +1,18 @@
+
 # v1.0 Release Notes
-
-!!! warning "Developer Note - Remove Me!"
-    Guiding Principles:
-
-    - Changelogs are for humans, not machines.
-    - There should be an entry for every single version.
-    - The same types of changes should be grouped.
-    - Versions and sections should be linkable.
-    - The latest version comes first.
-    - The release date of each version is displayed.
-    - Mention whether you follow Semantic Versioning.
-
-    Types of changes:
-
-    - `Added` for new features.
-    - `Changed` for changes in existing functionality.
-    - `Deprecated` for soon-to-be removed features.
-    - `Removed` for now removed features.
-    - `Fixed` for any bug fixes.
-    - `Security` in case of vulnerabilities.
-
 
 This document describes all new features and changes in the release `1.0`. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Release Overview
 
-- Major features or milestones
-- Achieved in this `x.y` release
-- Changes to compatibility with Nautobot and/or other apps, libraries etc.
+We are thrilled to ship Nautobot Topology Views 1.0—the first stable release of an app that turns your live inventory into clear, interactive topology diagrams inside Nautobot. This milestone caps a ground-up migration from the original NetBox-oriented codebase: every integration point was revalidated for Nautobot so you get the same powerful visualization workflow on a platform built for network automation at scale. If you have been waiting for first-class topology in Nautobot, this is the release to install and explore.
 
-## [v1.0.1] - 2021-09-08
+## [v1.0.0 (2026-03-25)](https://github.com/nautobot/nautobot-app-topology-views/releases/tag/v1.0.0)
 
 ### Added
 
-### Changed
+- [#1](https://github.com/nautobot/nautobot-app-topology-views/issues/1) - Forked project and updated to work with Nautobot.
 
-### Fixed
+### Housekeeping
 
-- [#123](https://github.com/nautobot/nautobot-app-topology-views/issues/123) Fixed Tag filtering not working in job launch form
-
-## [v1.0.0] - 2021-08-03
-
-### Added
-
-### Changed
-
-### Fixed
+- Rebaked from the cookie `develop`.

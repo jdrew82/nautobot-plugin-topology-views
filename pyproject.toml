@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nautobot-topology-views"
-version = "0.1.0"
+version = "1.0.0"
 description = "Nautobot App that draws network topology diagrams"
 authors = ["Justin Drew <info@networktocode.com>"]
 license = "Apache-2.0"
@@ -163,7 +163,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.towncrier]
 package = "nautobot_topology_views"
 directory = "changes"
-filename = "docs/admin/release_notes/version_X.Y.md"
+filename = "docs/admin/release_notes/version_1.0.md"
 template = "development/towncrier_template.j2"
 start_string = "<!-- towncrier release notes start -->"
 issue_format = "[#{issue}](https://github.com/nautobot/nautobot-app-topology-views/issues/{issue})"
