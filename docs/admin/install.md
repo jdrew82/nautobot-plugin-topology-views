@@ -21,18 +21,18 @@ Here you will find detailed instructions on how to **install** and **configure**
 ## Install Guide
 
 !!! note
-    Apps can be installed from the [Python Package Index](https://pypi.org/) or locally. See the [Nautobot documentation](https://docs.nautobot.com/projects/core/en/stable/user-guide/administration/installation/app-install/) for more details. The pip package name for this app is [`topology-views`](https://pypi.org/project/topology-views/).
+    Apps can be installed from the [Python Package Index](https://pypi.org/) or locally. See the [Nautobot documentation](https://docs.nautobot.com/projects/core/en/stable/user-guide/administration/installation/app-install/) for more details. The pip package name for this app is [`nautobot-topology-views`](https://pypi.org/project/nautobot-topology-views/).
 
 The app is available as a Python package via PyPI and can be installed with `pip`:
 
 ```shell
-pip install topology-views
+pip install nautobot-topology-views
 ```
 
-To ensure Topology Views is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the Nautobot root directory (alongside `requirements.txt`) and list the `topology-views` package:
+To ensure Nautobot Topology Views is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the Nautobot root directory (alongside `requirements.txt`) and list the `nautobot-topology-views` package:
 
 ```shell
-echo topology-views >> local_requirements.txt
+echo nautobot-topology-views >> local_requirements.txt
 ```
 
 Once installed, the app needs to be enabled in your Nautobot configuration. The following block of code below shows the additional configuration required to be added to your `nautobot_config.py` file:
