@@ -1,0 +1,15 @@
+---
+topology_views:
+  nautobot_ver: "3.0.0"
+  python_ver: "3.12"
+  # local: false
+  # compose_dir: "/full/path/to/nautobot-plugin-topology-views/development"
+
+# The following is an example of using MySQL as the database backend
+# ---
+# topology_views:
+#   compose_files:
+#     - "docker-compose.base.yml"
+#     - "docker-compose.redis.yml"
+#     - "docker-compose.mysql.yml"
+#     - "docker-compose.dev.yml"

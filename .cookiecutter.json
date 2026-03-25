@@ -1,0 +1,31 @@
+{
+    "cookiecutter": {
+        "codeowner_github_usernames": "@jdrew82",
+        "full_name": "Justin Drew",
+        "email": "info@networktocode.com",
+        "github_org": "jdrew82",
+        "app_name": "topology_views",
+        "verbose_name": "Nautobot Topology Views",
+        "app_slug": "topology-views",
+        "project_slug": "nautobot-plugin-topology-views",
+        "repo_url": "https://github.com/jdrew82/nautobot-plugin-topology-views",
+        "base_url": "nautobot-topology-views",
+        "camel_name": "NautobotTopologyViews",
+        "project_short_description": "Nautobot App that draws network topology diagrams",
+        "model_class_name": "RoleImage",
+        "open_source_license": "Apache-2.0",
+        "docs_base_url": "https://docs.nautobot.com",
+        "docs_app_url": "https://docs.nautobot.com/projects/nautobot-topology-views/en/latest",
+        "_drift_manager": {
+            "template": "https://github.com/nautobot/cookiecutter-nautobot-app.git",
+            "template_dir": "nautobot-app",
+            "template_ref": "develop",
+            "cookie_dir": "",
+            "pull_request_strategy": "create",
+            "post_actions": [],
+            "draft": false,
+            "baked_commit_ref": "",
+            "drift_managed_branch": "develop"
+        }
+    }
+}
