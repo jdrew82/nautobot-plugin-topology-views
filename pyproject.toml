@@ -1,12 +1,22 @@
 [tool.poetry]
+<<<<<<< HEAD
 name = "nautobot-topology-views"
 version = "0.1.0"
+=======
+name = "topology-views"
+version = "0.1.0a0"
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 description = "Nautobot App that draws network topology diagrams"
 authors = ["Justin Drew <info@networktocode.com>"]
 license = "Apache-2.0"
 readme = "README.md"
+<<<<<<< HEAD
 homepage = "https://github.com/nautobot/nautobot-app-topology-views"
 repository = "https://github.com/nautobot/nautobot-app-topology-views"
+=======
+homepage = "https://github.com/jdrew82/nautobot-plugin-topology-views"
+repository = "https://github.com/jdrew82/nautobot-plugin-topology-views"
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 documentation = "https://docs.nautobot.com/projects/nautobot-topology-views/en/latest/"
 keywords = ["nautobot", "nautobot-app", "nautobot-plugin"]
 classifiers = [
@@ -20,11 +30,19 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 packages = [
+<<<<<<< HEAD
     { include = "nautobot_topology_views" },
 ]
 include = [
     # Poetry by default will exclude files that are in .gitignore
     { path = "nautobot_topology_views/static/nautobot_topology_views/docs/**/*", format = ["sdist", "wheel"] }
+=======
+    { include = "topology_views" },
+]
+include = [
+    # Poetry by default will exclude files that are in .gitignore
+    { path = "topology_views/static/topology_views/docs/**/*", format = ["sdist", "wheel"] }
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 ]
 
 [tool.poetry.dependencies]
@@ -131,10 +149,17 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
+<<<<<<< HEAD
 "nautobot_topology_views/migrations/*" = [
     "D",
 ]
 "nautobot_topology_views/tests/*" = [
+=======
+"topology_views/migrations/*" = [
+    "D",
+]
+"topology_views/tests/*" = [
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     "D",
     "S"
 ]
@@ -147,7 +172,11 @@ omit = [
     "*/tests/*",
 ]
 include = [
+<<<<<<< HEAD
     "nautobot_topology_views/*",
+=======
+    "topology_views/*",
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 ]
 
 [tool.pymarkdown]
@@ -161,12 +190,20 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.towncrier]
+<<<<<<< HEAD
 package = "nautobot_topology_views"
+=======
+package = "topology_views"
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 directory = "changes"
 filename = "docs/admin/release_notes/version_X.Y.md"
 template = "development/towncrier_template.j2"
 start_string = "<!-- towncrier release notes start -->"
+<<<<<<< HEAD
 issue_format = "[#{issue}](https://github.com/nautobot/nautobot-app-topology-views/issues/{issue})"
+=======
+issue_format = "[#{issue}](https://github.com/jdrew82/nautobot-plugin-topology-views/issues/{issue})"
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 [[tool.towncrier.type]]
 directory = "breaking"
@@ -221,4 +258,8 @@ showcontent = true
 [tool.djlint]
 ignore = "H005,H006,H008,H011,H012,H013,H014,H015,H016,H019,H020,H021,H022,H023,H025,H026,H030,H031,H037"
 profile="django"
+<<<<<<< HEAD
 extend_exclude = "docs/,nautobot_topology_views/static/"
+=======
+extend_exclude = "docs/,topology_views/static/"
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)

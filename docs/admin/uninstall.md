@@ -7,7 +7,11 @@ Here you will find any steps necessary to cleanly remove the App from your Nauto
 Prior to removing the app from the `nautobot_config.py`, run the following command to roll back any migration specific to this app.
 
 ```shell
+<<<<<<< HEAD
 nautobot-server migrate nautobot_topology_views zero
+=======
+nautobot-server migrate topology_views zero
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 ```
 
 !!! warning "Developer Note - Remove Me!"

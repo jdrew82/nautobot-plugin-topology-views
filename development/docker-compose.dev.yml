@@ -26,7 +26,11 @@ services:
       - "8001:8080"
     volumes:
       - "../:/source"
+<<<<<<< HEAD
     image: "nautobot-topology-views/nautobot:${NAUTOBOT_VER}-py${PYTHON_VER}"
+=======
+    image: "topology-views/nautobot:${NAUTOBOT_VER}-py${PYTHON_VER}"
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     healthcheck:
       disable: true
     tty: true

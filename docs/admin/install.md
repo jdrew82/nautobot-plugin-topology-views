@@ -29,7 +29,11 @@ The app is available as a Python package via PyPI and can be installed with `pip
 pip install topology-views
 ```
 
+<<<<<<< HEAD
 To ensure Topology Views is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the Nautobot root directory (alongside `requirements.txt`) and list the `topology-views` package:
+=======
+To ensure Nautobot Topology Views is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the Nautobot root directory (alongside `requirements.txt`) and list the `topology-views` package:
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 ```shell
 echo topology-views >> local_requirements.txt
@@ -37,6 +41,7 @@ echo topology-views >> local_requirements.txt
 
 Once installed, the app needs to be enabled in your Nautobot configuration. The following block of code below shows the additional configuration required to be added to your `nautobot_config.py` file:
 
+<<<<<<< HEAD
 - Append `"nautobot_topology_views"` to the `PLUGINS` list.
 - Append the `"nautobot_topology_views"` dictionary to the `PLUGINS_CONFIG` dictionary and override any defaults.
 
@@ -46,6 +51,17 @@ PLUGINS = ["nautobot_topology_views"]
 
 # PLUGINS_CONFIG = {
 #   "nautobot_topology_views": {
+=======
+- Append `"topology_views"` to the `PLUGINS` list.
+- Append the `"topology_views"` dictionary to the `PLUGINS_CONFIG` dictionary and override any defaults.
+
+```python
+# In your nautobot_config.py
+PLUGINS = ["topology_views"]
+
+# PLUGINS_CONFIG = {
+#   "topology_views": {
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 #     ADD YOUR SETTINGS HERE
 #   }
 # }

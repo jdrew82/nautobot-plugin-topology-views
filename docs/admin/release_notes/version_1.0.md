@@ -37,7 +37,11 @@ This document describes all new features and changes in the release `1.0`. The f
 
 ### Fixed
 
+<<<<<<< HEAD
 - [#123](https://github.com/nautobot/nautobot-app-topology-views/issues/123) Fixed Tag filtering not working in job launch form
+=======
+- [#123](https://github.com/jdrew82/nautobot-plugin-topology-views/issues/123) Fixed Tag filtering not working in job launch form
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 ## [v1.0.0] - 2021-08-03
 

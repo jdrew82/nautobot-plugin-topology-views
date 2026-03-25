@@ -1,10 +1,17 @@
 ---
 dev_addr: "127.0.0.1:8001"
 edit_uri: "edit/main/docs"
+<<<<<<< HEAD
 site_dir: "nautobot_topology_views/static/nautobot_topology_views/docs"
 site_name: "Nautobot Topology Views Documentation"
 site_url: "https://docs.nautobot.com/projects/nautobot-topology-views/en/latest/"
 repo_url: "https://github.com/nautobot/nautobot-app-nautobot-topology-views"
+=======
+site_dir: "topology_views/static/topology_views/docs"
+site_name: "Nautobot Topology Views Documentation"
+site_url: "https://docs.nautobot.com/projects/nautobot-topology-views/en/latest/"
+repo_url: "https://github.com/jdrew82/nautobot-plugin-topology-views"
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 copyright: "Copyright &copy; The Authors"
 theme:
   name: "material"
@@ -122,7 +129,10 @@ nav:
       - Release Notes:
           - "admin/release_notes/index.md"
           - v1.0: "admin/release_notes/version_1.0.md"
+<<<<<<< HEAD
           - v0.1: "admin/release_notes/version_0.1.md"
+=======
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
   - Developer Guide:
       - Extending the App: "dev/extending.md"
       - Contributing to the App: "dev/contributing.md"

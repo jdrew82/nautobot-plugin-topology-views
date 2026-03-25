@@ -1,5 +1,9 @@
 <!--
+<<<<<<< HEAD
     Thank you for your interest in contributing to Topology Views! Please note
+=======
+    Thank you for your interest in contributing to Nautobot Topology Views! Please note
+>>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     that our contribution policy recommends that a feature request or bug
     report be opened for approval prior to filing a pull request. This
     helps avoid wasting time and effort on something that we might not
