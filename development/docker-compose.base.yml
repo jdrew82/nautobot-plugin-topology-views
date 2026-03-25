@@ -7,11 +7,7 @@ x-nautobot-build: &nautobot-build
     context: "../"
     dockerfile: "development/Dockerfile"
 x-nautobot-base: &nautobot-base
-<<<<<<< HEAD
   image: "nautobot-topology-views/nautobot:${NAUTOBOT_VER}-py${PYTHON_VER}"
-=======
-  image: "topology-views/nautobot:${NAUTOBOT_VER}-py${PYTHON_VER}"
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
   env_file:
     - "development.env"
     - "creds.env"
@@ -40,16 +36,12 @@ services:
       timeout: "10s"
       start_period: "30s"
       retries: 3
-<<<<<<< HEAD
       test: [
         "CMD",
         "bash",
         "-c",
         "nautobot-server celery inspect ping --destination celery@$$HOSTNAME",
       ]  # $$ because of docker-compose
-=======
-      test: ["CMD", "bash", "-c", "nautobot-server celery inspect ping --destination celery@$$HOSTNAME"]  ## $$ because of docker-compose
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     <<: *nautobot-base
   beat:
     entrypoint:

@@ -20,11 +20,7 @@ ARG NAUTOBOT_ROOT=/opt/nautobot
 
 ENV prometheus_multiproc_dir=/prom_cache
 ENV NAUTOBOT_ROOT=${NAUTOBOT_ROOT}
-<<<<<<< HEAD
 ENV INVOKE_NAUTOBOT_TOPOLOGY_VIEWS_LOCAL=true
-=======
-ENV INVOKE_TOPOLOGY_VIEWS_LOCAL=true
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 # Install Poetry manually via its installer script;
 # We might be using an older version of Nautobot that includes an older version of Poetry

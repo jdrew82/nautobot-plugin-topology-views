@@ -49,11 +49,7 @@ The branching policy includes the following tenets:
 - PRs intended to add new features should be sourced from the `develop` branch.
 - PRs intended to fix issues in the Nautobot LTM compatible release should be sourced from the latest `ltm-<major.minor>` branch instead of `develop`.
 
-<<<<<<< HEAD
 Topology Views will observe semantic versioning, as of 1.0. This may result in a quick turnaround in minor versions to keep pace with an ever-growing feature set.
-=======
-Nautobot Topology Views will observe semantic versioning, as of 1.0. This may result in a quick turnaround in minor versions to keep pace with an ever-growing feature set.
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 ## Testing Standards
 
@@ -76,10 +72,6 @@ We will create a `release-X.Y` branch for you to open your PR against and cut a 
 
 ## Release Policy
 
-<<<<<<< HEAD
 Topology Views has currently no intended scheduled release schedule, and will release new features in minor versions.
-=======
-Nautobot Topology Views has currently no intended scheduled release schedule, and will release new features in minor versions.
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 The steps taken by maintainers when creating a new release are documented in the [release checklist](./release_checklist.md).

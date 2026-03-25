@@ -1,17 +1,9 @@
 ---
-<<<<<<< HEAD
 nautobot_topology_views:
   project_name: "nautobot-topology-views"
   nautobot_ver: "3.0.0"
   local: false
   python_ver: "3.13"
-=======
-topology_views:
-  project_name: "topology-views"
-  nautobot_ver: "3.0.0"
-  local: false
-  python_ver: "3.12"
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
   compose_dir: "development"
   compose_files:
     - "docker-compose.base.yml"

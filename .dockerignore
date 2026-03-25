@@ -19,10 +19,7 @@ FAQ.md
 .git/
 .gitignore
 .github
-<<<<<<< HEAD
 tasks.py
-=======
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 LICENSE
 **/*.log
 **/.vscode/

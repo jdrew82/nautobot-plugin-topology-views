@@ -7,11 +7,7 @@ labels:
 
 ### Environment
 * Nautobot version:  <!-- Example: 3.0.0 -->
-<<<<<<< HEAD
 * nautobot-topology-views version:  <!-- Example: 1.0.0 -->
-=======
-* topology-views version:  <!-- Example: 1.0.0 -->
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 <!--
     Describe in detail the new functionality you are proposing.

@@ -47,7 +47,6 @@ def is_truthy(arg):
 
 
 # Use pyinvoke configuration for default values, see http://docs.pyinvoke.org/en/stable/concepts/configuration.html
-<<<<<<< HEAD
 # Variables may be overwritten in invoke.yml or by the environment variables INVOKE_NAUTOBOT_TOPOLOGY_VIEWS_xxx
 namespace = Collection("nautobot_topology_views")
 namespace.configure(
@@ -55,15 +54,6 @@ namespace.configure(
         "nautobot_topology_views": {
             "nautobot_ver": "3.0.0",
             "project_name": "nautobot-topology-views",
-=======
-# Variables may be overwritten in invoke.yml or by the environment variables INVOKE_TOPOLOGY_VIEWS_xxx
-namespace = Collection("topology_views")
-namespace.configure(
-    {
-        "topology_views": {
-            "nautobot_ver": "3.0.0",
-            "project_name": "topology-views",
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
             "python_ver": "3.12",
             "local": False,
             "compose_dir": os.path.join(os.path.dirname(__file__), "development"),
@@ -80,11 +70,7 @@ namespace.configure(
 
 
 def _is_compose_included(context, name):
-<<<<<<< HEAD
     return f"docker-compose.{name}.yml" in context.nautobot_topology_views.compose_files
-=======
-    return f"docker-compose.{name}.yml" in context.topology_views.compose_files
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 
 def _await_healthy_service(context, service):
@@ -137,34 +123,19 @@ def docker_compose(context, command, **kwargs):
     build_env = {
         # Note: 'docker compose logs' will stop following after 60 seconds by default,
         # so we are overriding that by setting this environment variable.
-<<<<<<< HEAD
         "COMPOSE_HTTP_TIMEOUT": context.nautobot_topology_views.compose_http_timeout,
         "NAUTOBOT_VER": context.nautobot_topology_views.nautobot_ver,
         "PYTHON_VER": context.nautobot_topology_views.python_ver,
-=======
-        "COMPOSE_HTTP_TIMEOUT": context.topology_views.compose_http_timeout,
-        "NAUTOBOT_VER": context.topology_views.nautobot_ver,
-        "PYTHON_VER": context.topology_views.python_ver,
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
         **kwargs.pop("env", {}),
     }
     compose_command_tokens = [
         "docker compose",
-<<<<<<< HEAD
         f"--project-name {context.nautobot_topology_views.project_name}",
         f'--project-directory "{context.nautobot_topology_views.compose_dir}"',
     ]
 
     for compose_file in context.nautobot_topology_views.compose_files:
         compose_file_path = os.path.join(context.nautobot_topology_views.compose_dir, compose_file)
-=======
-        f"--project-name {context.topology_views.project_name}",
-        f'--project-directory "{context.topology_views.compose_dir}"',
-    ]
-
-    for compose_file in context.topology_views.compose_files:
-        compose_file_path = os.path.join(context.topology_views.compose_dir, compose_file)
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
         compose_command_tokens.append(f' -f "{compose_file_path}"')
 
     compose_command_tokens.append(command)
@@ -182,11 +153,7 @@ def docker_compose(context, command, **kwargs):
 
 def run_command(context, command, service="nautobot", **kwargs):
     """Wrapper to run a command locally or inside the nautobot container."""
-<<<<<<< HEAD
     if is_truthy(context.nautobot_topology_views.local):
-=======
-    if is_truthy(context.topology_views.local):
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
         if "command_env" in kwargs:
             kwargs["env"] = {
                 **kwargs.get("env", {}),
@@ -232,17 +199,12 @@ def build(context, force_rm=False, cache=True):
     if force_rm:
         command += " --force-rm"
 
-<<<<<<< HEAD
     print(f"Building Nautobot with Python {context.nautobot_topology_views.python_ver}...")
-=======
-    print(f"Building Nautobot with Python {context.topology_views.python_ver}...")
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     docker_compose(context, command)
 
 
 def _ensure_creds_env_file(context):
     """Ensure that the development/creds.env file exists."""
-<<<<<<< HEAD
     if not os.path.exists(os.path.join(context.nautobot_topology_views.compose_dir, "creds.env")):
         # Warn the user that the creds.env file does not exist and that we are copying the example file to it
         print("⚠️⚠️ The creds.env file does not exist, using the example file to create it. ⚠️⚠️")
@@ -253,23 +215,6 @@ def _ensure_creds_env_file(context):
         )
 
 
-=======
-    if not os.path.exists(
-        os.path.join(context.topology_views.compose_dir, "creds.env")
-    ):
-        # Warn the user that the creds.env file does not exist and that we are copying the example file to it
-        print(
-            "⚠️⚠️ The creds.env file does not exist, using the example file to create it. ⚠️⚠️"
-        )
-        # Copy the creds.example.env file to creds.env
-        shutil.copy(
-            os.path.join(
-                context.topology_views.compose_dir, "creds.example.env"
-            ),
-            os.path.join(context.topology_views.compose_dir, "creds.env"),
-        )
-
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 @task
 def generate_packages(context):
     """Generate all Python packages inside docker and copy the file locally under dist/."""
@@ -280,17 +225,10 @@ def generate_packages(context):
 def _get_docker_nautobot_version(context, nautobot_ver=None, python_ver=None):
     """Extract Nautobot version from base docker image."""
     if nautobot_ver is None:
-<<<<<<< HEAD
         nautobot_ver = context.nautobot_topology_views.nautobot_ver
     if python_ver is None:
         python_ver = context.nautobot_topology_views.python_ver
     dockerfile_path = os.path.join(context.nautobot_topology_views.compose_dir, "Dockerfile")
-=======
-        nautobot_ver = context.topology_views.nautobot_ver
-    if python_ver is None:
-        python_ver = context.topology_views.python_ver
-    dockerfile_path = os.path.join(context.topology_views.compose_dir, "Dockerfile")
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     base_image = context.run(f"grep --max-count=1 '^FROM ' {dockerfile_path}", hide=True).stdout.strip().split(" ")[1]
     base_image = base_image.replace(r"${NAUTOBOT_VER}", nautobot_ver).replace(r"${PYTHON_VER}", python_ver)
     pip_nautobot_ver = context.run(f"docker run --rm --entrypoint '' {base_image} pip show nautobot", hide=True)
@@ -333,11 +271,7 @@ def lock(context, check=False, constrain_nautobot_ver=False, constrain_python_ve
             print(output.stderr, file=sys.stderr, end="")
         except UnexpectedExit:
             print("Unable to add Nautobot dependency with version constraint, falling back to git branch.")
-<<<<<<< HEAD
             command = f"poetry add --lock git+https://github.com/nautobot/nautobot.git#{context.nautobot_topology_views.nautobot_ver}"
-=======
-            command = f"poetry add --lock git+https://github.com/nautobot/nautobot.git#{context.topology_views.nautobot_ver}"
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
             if constrain_python_ver:
                 command += f" --python {constrain_python_ver}"
             run_command(context, command)
@@ -547,11 +481,7 @@ def createsuperuser(context, user="admin"):
 )
 def makemigrations(context, name=""):
     """Perform makemigrations operation in Django."""
-<<<<<<< HEAD
     command = "nautobot-server makemigrations nautobot_topology_views"
-=======
-    command = "nautobot-server makemigrations topology_views"
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
     if name:
         command += f" --name {name}"
@@ -772,11 +702,7 @@ def docs(context):
     # Ref: https://github.com/mkdocs/mkdocs/issues/4032
     command = "mkdocs serve -v --livereload"
 
-<<<<<<< HEAD
     if is_truthy(context.nautobot_topology_views.local):
-=======
-    if is_truthy(context.topology_views.local):
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
         print(">>> Serving Documentation at http://localhost:8001")
         run_command(context, command)
     else:
@@ -815,11 +741,7 @@ def help_task(context):
 
 @task(
     help={
-<<<<<<< HEAD
         "version": "Version of Topology Views to generate the release notes for.",
-=======
-        "version": "Version of Nautobot Topology Views to generate the release notes for.",
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
         "date": "Date of the release (default: today).",
         "keep": "Keep existing release notes files. Useful for testing. (default: False).",
     }
@@ -859,29 +781,17 @@ def pylint(context):
     exit_code = 0
 
     base_pylint_command = 'pylint --verbose --init-hook "import nautobot; nautobot.setup()" --rcfile pyproject.toml'
-<<<<<<< HEAD
     command = f"{base_pylint_command} nautobot_topology_views"
-=======
-    command = f"{base_pylint_command} topology_views"
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     if not run_command(context, command, warn=True):
         exit_code = 1
 
     # run the pylint_django migrations checkers on the migrations directory, if one exists
-<<<<<<< HEAD
     migrations_dir = Path(__file__).absolute().parent / Path("nautobot_topology_views") / Path("migrations")
-=======
-    migrations_dir = Path(__file__).absolute().parent / Path("topology_views") / Path("migrations")
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     if migrations_dir.is_dir():
         migrations_pylint_command = (
             f"{base_pylint_command} --load-plugins=pylint_django.checkers.migrations"
             " --disable=all --enable=fatal,new-db-field-with-default,missing-backwards-migration-callable"
-<<<<<<< HEAD
             " nautobot_topology_views.migrations"
-=======
-            " topology_views.migrations"
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
         )
         if not run_command(context, migrations_pylint_command, warn=True):
             exit_code = 1
@@ -964,11 +874,7 @@ def djlint(context, target=None):
 )
 def djhtml(context, check=False):
     """Run djhtml to format Django HTML templates."""
-<<<<<<< HEAD
     command = "djhtml -t 4 nautobot_topology_views/templates/"
-=======
-    command = "djhtml -t 4 topology_views/templates/"
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
     if check:
         command += " --check"
@@ -1024,11 +930,7 @@ def check_migrations(context):
 def unittest(  # noqa: PLR0913
     context,
     keepdb=False,
-<<<<<<< HEAD
     label="nautobot_topology_views",
-=======
-    label="topology_views",
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
     failfast=False,
     buffer=True,
     pattern="",
@@ -1092,11 +994,7 @@ def coverage_xml(context):
 def tests(context, failfast=False, keepdb=False, lint_only=False):
     """Run all tests for this app."""
     # If we are not running locally, start the docker containers so we don't have to for each test
-<<<<<<< HEAD
     if not is_truthy(context.nautobot_topology_views.local):
-=======
-    if not is_truthy(context.topology_views.local):
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
         print("Starting Docker Containers...")
         start(context)
     # Sorted loosely from fastest to slowest

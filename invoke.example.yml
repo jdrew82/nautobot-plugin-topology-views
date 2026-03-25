@@ -1,5 +1,4 @@
 ---
-<<<<<<< HEAD
 nautobot_topology_views:
   project_name: "nautobot-topology-views"
   nautobot_ver: "2.0.0"
@@ -11,19 +10,3 @@ nautobot_topology_views:
     - "docker-compose.redis.yml"
     - "docker-compose.postgres.yml"
     - "docker-compose.dev.yml"
-=======
-topology_views:
-  nautobot_ver: "3.0.0"
-  python_ver: "3.12"
-  # local: false
-  # compose_dir: "/full/path/to/nautobot-plugin-topology-views/development"
-
-# The following is an example of using MySQL as the database backend
-# ---
-# topology_views:
-#   compose_files:
-#     - "docker-compose.base.yml"
-#     - "docker-compose.redis.yml"
-#     - "docker-compose.mysql.yml"
-#     - "docker-compose.dev.yml"
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)

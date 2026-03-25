@@ -5,17 +5,12 @@ Developer Note - Remove Me!
 
 The README will have certain links/images broken until the PR is merged into `develop`. Update the GitHub links with whichever branch you're using (main etc.) if different.
 
-<<<<<<< HEAD
 The logo of the project is a placeholder (docs/images/icon-nautobot-topology-views.png) - please replace it with your app icon, making sure it's at least 200x200px and has a transparent background!
-=======
-The logo of the project is a placeholder (docs/images/icon-topology-views.png) - please replace it with your app icon, making sure it's at least 200x200px and has a transparent background!
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 To avoid extra work and temporary links, make sure that publishing docs (or merging a PR) is done at the same time as setting up the docs site on RTD, then test everything.
 -->
 
 <p align="center">
-<<<<<<< HEAD
   <img src="https://raw.githubusercontent.com/jdrew82/nautobot-plugin-topology-views/develop/docs/images/icon-nautobot-topology-views.png" class="logo" height="200px">
   <br>
   <a href="https://github.com/jdrew82/nautobot-plugin-topology-views/actions"><img src="https://github.com/jdrew82/nautobot-plugin-topology-views/actions/workflows/ci.yml/badge.svg?branch=main"></a>
@@ -24,16 +19,6 @@ To avoid extra work and temporary links, make sure that publishing docs (or merg
   <a href="https://pypi.org/project/nautobot-topology-views/"><img src="https://img.shields.io/pypi/dm/nautobot-topology-views"></a>
   <br>
   An <a href="https://www.networktocode.com/nautobot/apps/">App</a> for <a href="https://nautobot.com/">Nautobot</a>.
-=======
-  <img src="https://raw.githubusercontent.com/jdrew82/nautobot-plugin-topology-views/develop/docs/images/icon-topology-views.png" class="logo" height="200px">
-  <br>
-  <a href="https://github.com/jdrew82/nautobot-plugin-topology-views/actions"><img src="https://github.com/jdrew82/nautobot-plugin-topology-views/actions/workflows/ci.yml/badge.svg?branch=main"></a>
-  <a href="https://docs.nautobot.com/projects/nautobot-topology-views/en/latest/"><img src="https://readthedocs.org/projects/nautobot-app-nautobot-topology-views/badge/"></a>
-  <a href="https://pypi.org/project/topology-views/"><img src="https://img.shields.io/pypi/v/topology-views"></a>
-  <a href="https://pypi.org/project/topology-views/"><img src="https://img.shields.io/pypi/dm/topology-views"></a>
-  <br>
-  An <a href="https://networktocode.com/nautobot-apps/">App</a> for <a href="https://nautobot.com/">Nautobot</a>.
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 </p>
 
 ## Overview
@@ -44,15 +29,9 @@ To avoid extra work and temporary links, make sure that publishing docs (or merg
 
 > Developer Note: Add any representative screenshots of the App in action. These images should also be added to the `docs/user/app_use_cases.md` section.
 
-<<<<<<< HEAD
 > Developer Note: Place the files in the `docs/images/` folder and link them using only full URLs from GitHub, for example: `![Overview](https://raw.githubusercontent.com/jdrew82/nautobot-plugin-topology-views/develop/docs/images/plugin-overview.png)`. This absolute static linking is required to ensure the README renders properly in GitHub, the docs site, and any other external sites like PyPI.
 
 More screenshots can be found in the [Using the App](https://docs.nautobot.com/projects/nautobot-topology-views/en/latest/user/app_use_cases/) page in the documentation. Here's a quick overview of some of the plugin's added functionality:
-=======
-> Developer Note: Place the files in the `docs/images/` folder and link them using only full URLs from GitHub, for example: `![Overview](https://raw.githubusercontent.com/jdrew82/nautobot-plugin-topology-views/develop/docs/images/app-overview.png)`. This absolute static linking is required to ensure the README renders properly in GitHub, the docs site, and any other external sites like PyPI.
-
-More screenshots can be found in the [Using the App](https://docs.nautobot.com/projects/nautobot-topology-views/en/latest/user/app_use_cases/) page in the documentation. Here's a quick overview of some of the app's added functionality:
->>>>>>> 5c275df (Cookie initially baked targeting develop by NetworkToCode Cookie Drift Manager Tool)
 
 ![](https://raw.githubusercontent.com/jdrew82/nautobot-plugin-topology-views/develop/docs/images/placeholder.png)
 
