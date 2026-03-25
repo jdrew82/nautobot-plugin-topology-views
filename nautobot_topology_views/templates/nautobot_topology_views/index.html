@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load buttons %}
 {% load render_table from django_tables2 %}
 {% load static %}
@@ -6,22 +6,22 @@
 {% load helpers %}
 {% load topology_helpers %}
 
-{% block title %}Topology Views{% endblock %}
+{% block title %}Topology Views{% endblock title %}
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{% static 'nautobot_topology_views/css/vendor.css' %}">
 <link rel="stylesheet" href="{% static 'nautobot_topology_views/css/app.css' %}">
-{% endblock %}
+{% endblock extra_styles %}
 
 {% block drawer %}
   {% if filter_form %}
     {% filter_form_drawer filter_form dynamic_filter_form "Devices" filter_params filter_form_name="TopologyFilterForm" %}
   {% endif %}
-{% endblock %}
+{% endblock drawer %}
 
 {% block content %}
   <div class="align-items-center d-flex flex-wrap gap-8 justify-content-end mb-16 d-print-none" id="topology-toolbar">
-    {% block extra_controls %}{% endblock %}
+    {% block extra_controls %}{% endblock extra_controls %}
     {% if filter_form %}
     <div class="align-items-center d-flex gap-4">
       <button
@@ -63,7 +63,7 @@
       <div id="visgraph"></div>
     </div>
   </div>
-{% endblock %}
+{% endblock content %}
 
 {% block javascript %}
 <script type="text/javascript">
@@ -107,4 +107,4 @@
   }
 </script>
 <script src="{% static 'nautobot_topology_views/js/app.js' %}" defer></script>
-{% endblock %}
+{% endblock javascript %}

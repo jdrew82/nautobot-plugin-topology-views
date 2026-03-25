@@ -1,13 +1,13 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load buttons %}
 {% load render_table from django_tables2 %}
 {% load static %}
 
-{% block title %}Topology Views Images{% endblock %}
+{% block title %}Topology Views Images{% endblock title %}
 
 {% block extra_styles %}
 <link rel="stylesheet" href="{% static 'nautobot_topology_views/css/app.css' %}">
-{% endblock %}
+{% endblock extra_styles %}
 
 {% block content %}
 <form id="images" class="container py-4">
@@ -37,12 +37,12 @@
 
   <button class="btn btn-primary" type="submit">Save</button>
 </form>
-{% include 'nautobot_topology_views/toasts.html' %}
-{% endblock %}
+{% include "nautobot_topology_views/toasts.html" %}
+{% endblock content %}
 
 {% block javascript %}
 <script type="text/javascript">
   const basePath = '{{ basepath }}';
 </script>
 <script src="{% static 'nautobot_topology_views/js/images.js' %}" defer></script>
-{% endblock %}
+{% endblock javascript %}
