@@ -20,7 +20,7 @@ The [Invoke](http://www.pyinvoke.org/) library is used to provide some helper co
 - `compose_dir`: the full path to a directory containing the project compose files
 - `compose_files`: a list of compose files applied in order (see [Multiple Compose files](https://docs.docker.com/compose/extends/#multiple-compose-files) for more information)
 
-Using **Invoke** these configuration options can be overridden using [several methods](https://docs.pyinvoke.org/en/stable/concepts/configuration.html). Perhaps the simplest is setting an environment variable `INVOKE_TOPOLOGY_VIEWS_VARIABLE_NAME` where `VARIABLE_NAME` is the variable you are trying to override. The only exception is `compose_files`, because it is a list it must be overridden in a YAML file. There is an example `invoke.yml` (`invoke.example.yml`) in this directory which can be used as a starting point.
+Using **Invoke** these configuration options can be overridden using [several methods](https://docs.pyinvoke.org/en/stable/concepts/configuration.html). Perhaps the simplest is setting an environment variable `INVOKE_NAUTOBOT_TOPOLOGY_VIEWS_VARIABLE_NAME` where `VARIABLE_NAME` is the variable you are trying to override. The only exception is `compose_files`, because it is a list it must be overridden in a YAML file. There is an example `invoke.yml` (`invoke.example.yml`) in this directory which can be used as a starting point.
 
 ### Docker Development Environment
 
@@ -56,7 +56,7 @@ To either stop or destroy the development environment use the following options.
 
 ```yaml
 ---
-topology_views:
+nautobot_topology_views:
   local: true
 ```
 
@@ -192,18 +192,18 @@ Next, you need to start up your Docker containers.
 ➜ invoke start
 Starting Nautobot in detached mode...
 Running docker-compose command "up --detach"
-Creating network "topology_views_default" with the default driver
-Creating volume "topology_views_postgres_data" with default driver
-Creating topology_views_redis_1 ...
-Creating topology_views_docs_1  ...
-Creating topology_views_postgres_1 ...
-Creating topology_views_postgres_1 ... done
-Creating topology_views_redis_1    ... done
-Creating topology_views_nautobot_1 ...
-Creating topology_views_docs_1     ... done
-Creating topology_views_nautobot_1 ... done
-Creating topology_views_worker_1   ...
-Creating topology_views_worker_1   ... done
+Creating network "nautobot_topology_views_default" with the default driver
+Creating volume "nautobot_topology_views_postgres_data" with default driver
+Creating nautobot_topology_views_redis_1 ...
+Creating nautobot_topology_views_docs_1  ...
+Creating nautobot_topology_views_postgres_1 ...
+Creating nautobot_topology_views_postgres_1 ... done
+Creating nautobot_topology_views_redis_1    ... done
+Creating nautobot_topology_views_nautobot_1 ...
+Creating nautobot_topology_views_docs_1     ... done
+Creating nautobot_topology_views_nautobot_1 ... done
+Creating nautobot_topology_views_worker_1   ...
+Creating nautobot_topology_views_worker_1   ... done
 Docker Compose is now in the Docker CLI, try `docker compose up`
 ```
 
@@ -212,11 +212,11 @@ This will start all of the Docker containers used for hosting Nautobot. You shou
 ```bash
 ➜ docker ps
 ****CONTAINER ID   IMAGE                            COMMAND                  CREATED          STATUS          PORTS                                       NAMES
-ee90fbfabd77   topology-views/nautobot:3.0.0-py3.12  "nautobot-server rqw…"   16 seconds ago   Up 13 seconds                                               topology_views_worker_1
-b8adb781d013   topology-views/nautobot:3.0.0-py3.12  "/docker-entrypoint.…"   20 seconds ago   Up 15 seconds   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   topology_views_nautobot_1
-d64ebd60675d   topology-views/nautobot:3.0.0-py3.12  "mkdocs serve -v -a …"   25 seconds ago   Up 18 seconds   0.0.0.0:8001->8080/tcp, :::8001->8080/tcp   topology_views_docs_1
-e72d63129b36   postgres:13-alpine               "docker-entrypoint.s…"   25 seconds ago   Up 19 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   topology_views_postgres_1
-96c6ff66997c   redis:6-alpine                   "docker-entrypoint.s…"   25 seconds ago   Up 21 seconds   0.0.0.0:6379->6379/tcp, :::6379->6379/tcp   topology_views_redis_1
+ee90fbfabd77   topology-views/nautobot:3.0.0-py3.12  "nautobot-server rqw…"   16 seconds ago   Up 13 seconds                                               nautobot_topology_views_worker_1
+b8adb781d013   topology-views/nautobot:3.0.0-py3.12  "/docker-entrypoint.…"   20 seconds ago   Up 15 seconds   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   nautobot_topology_views_nautobot_1
+d64ebd60675d   topology-views/nautobot:3.0.0-py3.12  "mkdocs serve -v -a …"   25 seconds ago   Up 18 seconds   0.0.0.0:8001->8080/tcp, :::8001->8080/tcp   nautobot_topology_views_docs_1
+e72d63129b36   postgres:13-alpine               "docker-entrypoint.s…"   25 seconds ago   Up 19 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   nautobot_topology_views_postgres_1
+96c6ff66997c   redis:6-alpine                   "docker-entrypoint.s…"   25 seconds ago   Up 21 seconds   0.0.0.0:6379->6379/tcp, :::6379->6379/tcp   nautobot_topology_views_redis_1
 ```
 
 Once the containers are fully up, you should be able to open up a web browser, and view:
@@ -260,27 +260,27 @@ The last command to know for now is `invoke stop`.
 ➜ invoke stop
 Stopping Nautobot...
 Running docker-compose command "down"
-Stopping topology_views_worker_1   ...
-Stopping topology_views_nautobot_1 ...
-Stopping topology_views_docs_1     ...
-Stopping topology_views_redis_1    ...
-Stopping topology_views_postgres_1 ...
-Stopping topology_views_worker_1   ... done
-Stopping topology_views_nautobot_1 ... done
-Stopping topology_views_postgres_1 ... done
-Stopping topology_views_redis_1    ... done
-Stopping topology_views_docs_1     ... done
-Removing topology_views_worker_1   ...
-Removing topology_views_nautobot_1 ...
-Removing topology_views_docs_1     ...
-Removing topology_views_redis_1    ...
-Removing topology_views_postgres_1 ...
-Removing topology_views_postgres_1 ... done
-Removing topology_views_docs_1     ... done
-Removing topology_views_worker_1   ... done
-Removing topology_views_redis_1    ... done
-Removing topology_views_nautobot_1 ... done
-Removing network topology_views_default
+Stopping nautobot_topology_views_worker_1   ...
+Stopping nautobot_topology_views_nautobot_1 ...
+Stopping nautobot_topology_views_docs_1     ...
+Stopping nautobot_topology_views_redis_1    ...
+Stopping nautobot_topology_views_postgres_1 ...
+Stopping nautobot_topology_views_worker_1   ... done
+Stopping nautobot_topology_views_nautobot_1 ... done
+Stopping nautobot_topology_views_postgres_1 ... done
+Stopping nautobot_topology_views_redis_1    ... done
+Stopping nautobot_topology_views_docs_1     ... done
+Removing nautobot_topology_views_worker_1   ...
+Removing nautobot_topology_views_nautobot_1 ...
+Removing nautobot_topology_views_docs_1     ...
+Removing nautobot_topology_views_redis_1    ...
+Removing nautobot_topology_views_postgres_1 ...
+Removing nautobot_topology_views_postgres_1 ... done
+Removing nautobot_topology_views_docs_1     ... done
+Removing nautobot_topology_views_worker_1   ... done
+Removing nautobot_topology_views_redis_1    ... done
+Removing nautobot_topology_views_nautobot_1 ... done
+Removing network nautobot_topology_views_default
 ```
 
 This will safely shut down all of your running Docker containers for this project. When you are ready to spin containers back up, it is as simple as running `invoke start` again [as seen previously](#invoke-starting-the-development-environment).
@@ -318,7 +318,7 @@ When trying to debug an issue, one helpful thing you can look at are the logs wi
 !!! info
     Want to limit the log output even further? Use the `--tail <#>` command line argument in conjunction with `-f`.
 
-So for example, our app is named `topology-views`, the command would most likely be `docker logs topology_views_nautobot_1 -f`. You can find the name of all running containers via `docker ps`.
+So for example, our app is named `topology-views`, the command would most likely be `docker logs nautobot_topology_views_nautobot_1 -f`. You can find the name of all running containers via `docker ps`.
 
 If you want to view the logs specific to the worker container, simply use the name of that container instead.
 
@@ -386,10 +386,10 @@ Once the containers are up and running, you should now see the new app installed
 To update the Python version, you can update it within `tasks.py`.
 
 ```python
-namespace = Collection("topology_views")
+namespace = Collection("nautobot_topology_views")
 namespace.configure(
     {
-        "topology_views": {
+        "nautobot_topology_views": {
             ...
             "python_ver": "3.12",
 	    ...
@@ -398,17 +398,17 @@ namespace.configure(
 )
 ```
 
-Or set the `INVOKE_TOPOLOGY_VIEWS_PYTHON_VER` variable.
+Or set the `INVOKE_NAUTOBOT_TOPOLOGY_VIEWS_PYTHON_VER` variable.
 
 ### Updating Nautobot Version
 
 To update the Nautobot version, you can update it within `tasks.py`.
 
 ```python
-namespace = Collection("topology_views")
+namespace = Collection("nautobot_topology_views")
 namespace.configure(
     {
-        "topology_views": {
+        "nautobot_topology_views": {
             ...
             "nautobot_ver": "3.0.0",
 	    ...
@@ -469,7 +469,7 @@ To run an individual test, you can run any or all of the following:
 
 ### App Configuration Schema
 
-In the package source, there is the `topology_views/app-config-schema.json` file, conforming to the [JSON Schema](https://json-schema.org/) format. This file is used to validate the configuration of the app in CI pipelines.
+In the package source, there is the `nautobot_topology_views/app-config-schema.json` file, conforming to the [JSON Schema](https://json-schema.org/) format. This file is used to validate the configuration of the app in CI pipelines.
 
 If you make changes to `PLUGINS_CONFIG` or the configuration schema, you can run the following command to validate the schema:
 

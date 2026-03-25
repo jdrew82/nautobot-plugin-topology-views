@@ -37,15 +37,15 @@ echo topology-views >> local_requirements.txt
 
 Once installed, the app needs to be enabled in your Nautobot configuration. The following block of code below shows the additional configuration required to be added to your `nautobot_config.py` file:
 
-- Append `"topology_views"` to the `PLUGINS` list.
-- Append the `"topology_views"` dictionary to the `PLUGINS_CONFIG` dictionary and override any defaults.
+- Append `"nautobot_topology_views"` to the `PLUGINS` list.
+- Append the `"nautobot_topology_views"` dictionary to the `PLUGINS_CONFIG` dictionary and override any defaults.
 
 ```python
 # In your nautobot_config.py
-PLUGINS = ["topology_views"]
+PLUGINS = ["nautobot_topology_views"]
 
 # PLUGINS_CONFIG = {
-#   "topology_views": {
+#   "nautobot_topology_views": {
 #     ADD YOUR SETTINGS HERE
 #   }
 # }
