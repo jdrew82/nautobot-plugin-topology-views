@@ -1,0 +1,14 @@
+{% if applied_filters or saved_views_link %}
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        {% for f in applied_filters %}
+          <a href="{{ f.link_url }}" class="badge bg-secondary text-decoration-none" title="Remove this filter">{{ f.link_text }} ×</a>
+        {% endfor %}
+        {% if saved_views_link %}
+          <a href="{{ saved_views_link }}" class="btn btn-sm btn-outline-primary">Saved views</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endif %}

@@ -1,24 +1,34 @@
 <!--
-    IMPORTANT:
-    ==========
-    Thank you for contributing to NetBox Topology Views! Please 
-    note that our contribution guidelines require a feature 
-    request or bug report to be labeled "status: accepted". This 
-    helps avoid waste time and effort on a proposed change that 
-    we might not be able to accept. If a feature request or bug 
-    report is labeled "status: needs owner", feel free to raise 
-    your hand if you'd like to take work on it and we will 
-    happily assign you to the issue.
+    Thank you for your interest in contributing to Topology Views! Please note
+    that our contribution policy recommends that a feature request or bug
+    report be opened for approval prior to filing a pull request. This
+    helps avoid wasting time and effort on something that we might not
+    be able to accept.
 
-    Please prefix the title of your pull request according to 
-    it's type. You should use "Closes #FEATURE_ID: ..." for feature 
-    requests and "Fixes #ISSUE_ID: ..." for issues. This helps 
-    us closing issues automatically after merging.
-
-    To sum it up:
-    1. Create Bug Report or Feature Request
-    2. Wait until the issue has been labeled "status: accepted"
-    3. Start working on the issue in a seperate branch
-    3. Create a pull request and name the title with a prefix 
-       according to the issue ID.
+    Please indicate the relevant feature request or bug report below.
 -->
+
+# Closes: #<ISSUE NUMBER GOES HERE>
+
+## What's Changed
+
+<!--
+    Please include:
+    - A summary of the proposed changes
+    - A sectioned breakdown for larger features under ## subheadings
+    - Screenshots, example payloads where relevant:
+      - Before/After for bugfixes
+      - Using a new feature
+-->
+
+## To Do
+
+<!--
+    Please feel free to update todos to keep track of your own notes for WIP PRs.
+-->
+- [ ] Explanation of Change(s)
+- [ ] Added change log fragment(s) (for more information see [the documentation](https://docs.nautobot.com/projects/core/en/stable/development/core/#creating-changelog-fragments))
+- [ ] Attached Screenshots, Payload Example
+- [ ] Unit, Integration Tests
+- [ ] Documentation Updates (when adding/changing features)
+- [ ] Outline Remaining Work, Constraints from Design

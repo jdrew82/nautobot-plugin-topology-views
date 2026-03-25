@@ -1,0 +1,489 @@
+"""Utility functions and helpers for nautobot_topology_views."""
+
+import base64
+import xml.dom.minidom
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+from typing import Type
+from urllib.parse import urlparse
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.staticfiles.finders import find as staticfiles_find
+from django.db.models import Model
+from django.forms.models import ModelChoiceIterator
+from django.templatetags.static import static
+from django.utils.text import camel_case_to_spaces, re_camel_case
+
+IMAGE_FILETYPES = (
+    "apng",
+    "avif",
+    "bmp",
+    "cur",
+    "gif",
+    "ico",
+    "jfif",
+    "jpeg",
+    "jpg",
+    "pjp",
+    "pjpeg",
+    "png",
+    "svg",
+    "webp",
+)
+
+# App-relative path prefix for image lookup
+_IMG_STATIC_PREFIX = "nautobot_topology_views/img"
+
+
+def _get_image_dirs():
+    """Return (IMAGE_DIR, CONF_IMAGE_DIR) resolving to the actual directory on disk.
+
+    Uses STATIC_ROOT if it contains our images, otherwise falls back to the app's
+    source static directory (works with runserver in dev mode).
+    """
+    static_root_dir = Path(settings.STATIC_ROOT) / "nautobot_topology_views" if settings.STATIC_ROOT else None
+
+    # If STATIC_ROOT has our images (collectstatic was run), use it
+    if static_root_dir and static_root_dir.is_dir() and any(static_root_dir.iterdir()):
+        return static_root_dir, static_root_dir
+
+    # Fallback: find the app's source static directory via staticfiles finders
+    found = staticfiles_find(f"{_IMG_STATIC_PREFIX}/role-unknown.svg")
+    if found:
+        app_img_dir = Path(found).parent.parent  # go up from img/ to nautobot_topology_views/
+        return app_img_dir, app_img_dir
+
+    # Last resort: return STATIC_ROOT path even if empty
+    fallback = Path(settings.STATIC_ROOT or ".") / "nautobot_topology_views"
+    return fallback, fallback
+
+
+IMAGE_DIR, CONF_IMAGE_DIR = _get_image_dirs()
+
+
+def image_static_url(path: Path) -> str:
+    """Convert an absolute filesystem path to a Django static URL.
+
+    Returns an absolute URL (starting with '/') so it works when used in
+    JavaScript contexts (vis.js image nodes) where relative URLs would
+    resolve against the current page path.
+    """
+    parts = path.parts
+
+    # Look for 'static' parent directory — take everything after it.
+    # e.g. .../static/nautobot_topology_views/img/foo.svg → nautobot_topology_views/img/foo.svg
+    for i, part in enumerate(parts):
+        if part == "static" and i + 1 < len(parts) and parts[i + 1] == "nautobot_topology_views":
+            url = static(str(Path(*parts[i + 1 :])))
+            return _ensure_absolute(url)
+
+    # For STATIC_ROOT paths (no 'static' parent), find the last 'nautobot_topology_views'
+    # e.g. /opt/nautobot/static/nautobot_topology_views/img/foo.svg
+    for i in range(len(parts) - 1, -1, -1):
+        if parts[i] == "nautobot_topology_views" and i + 1 < len(parts):
+            url = static(str(Path(*parts[i:])))
+            return _ensure_absolute(url)
+
+    # Fallback: just use the filename under the default img prefix
+    url = static(f"nautobot_topology_views/img/{path.name}")
+    return _ensure_absolute(url)
+
+
+def _ensure_absolute(url: str) -> str:
+    """Ensure a static URL starts with '/' so it's absolute."""
+    if not url.startswith("/"):
+        return f"/{url}"
+    return url
+
+
+def get_image_from_url(url: str) -> str:
+    """Strip STATIC_URL prefix from a URL when present; otherwise return as-is."""
+    if url.startswith(settings.STATIC_URL):
+        return url[len(settings.STATIC_URL) :]
+    return url
+
+
+def find_image_in_dir(name: str, image_dir: Path):
+    """Return first matching image file for name under image_dir (or image_dir/img)."""
+    if not image_dir.is_dir():
+        return None
+    # Try exact name, then lowercased, then slugified (spaces → hyphens)
+    candidates = [name, name.lower(), name.lower().replace(" ", "-")]
+    for search_dir in [image_dir / "img", image_dir]:
+        if not search_dir.is_dir():
+            continue
+        for candidate in candidates:
+            result = next(
+                (f for f in search_dir.glob(f"{candidate}.*") if f.suffix.lstrip(".") in IMAGE_FILETYPES),
+                None,
+            )
+            if result:
+                return result
+    return None
+
+
+@lru_cache(maxsize=50)
+def find_image_url(name: str, image_dir: Path = CONF_IMAGE_DIR):
+    """Resolve a role image to a static URL.
+
+    Searches ``image_dir`` for a matching basename with any allowed extension,
+    then falls back to ``role-unknown``. Returns the static file URL or an empty
+    string if nothing is found.
+    """
+    if file := find_image_in_dir(name, image_dir):
+        return image_static_url(file)
+
+    if name != "role-unknown" and (file := find_image_in_dir("role-unknown", image_dir)):
+        return image_static_url(file)
+
+    if image_dir != IMAGE_DIR and (file := find_image_in_dir("role-unknown", IMAGE_DIR)):
+        return image_static_url(file)
+
+    return ""
+
+
+@dataclass
+class ModelRole:
+    """Lightweight representation of a model's role for image lookup."""
+
+    name: str
+
+
+def get_model_slug(model: Type[Model]):
+    """Return a hyphenated slug derived from the model class name."""
+    return camel_case_to_spaces(model.__name__).replace(" ", "-")
+
+
+def get_model_role(model: Type[Model]) -> ModelRole:
+    """Return a display-oriented role name for non-Device models (image lookup)."""
+    return ModelRole(
+        name=re_camel_case.sub(r" \1", model.__name__),
+    )
+
+
+def _request_query_dict(request):
+    """Return Django ``GET`` or DRF ``query_params`` for the request."""
+    return getattr(request, "query_params", request.GET)
+
+
+def get_query_settings(request):  # pylint: disable=too-many-branches
+    """Parse topology display/save flags from request GET parameters."""
+    params = _request_query_dict(request)
+    save_coords = False
+    if "save_coords" in params:
+        if params["save_coords"] == "on":
+            save_coords = True
+    # General options overrides
+    if save_coords is True and settings.PLUGINS_CONFIG["nautobot_topology_views"]["allow_coordinates_saving"] is False:
+        save_coords = False
+        messages.warning(request, "Coordinate saving not allowed. Setting has been overridden")
+    elif settings.PLUGINS_CONFIG["nautobot_topology_views"]["always_save_coordinates"] is True:
+        save_coords = True
+
+    # Individual options
+    show_unconnected = False
+    if "show_unconnected" in params:
+        if params["show_unconnected"] == "on":
+            show_unconnected = True
+
+    show_power = False
+    if "show_power" in params:
+        if params["show_power"] == "on":
+            show_power = True
+
+    show_circuit = False
+    if "show_circuit" in params:
+        if params["show_circuit"] == "on":
+            show_circuit = True
+
+    show_logical_connections = False
+    if "show_logical_connections" in params:
+        if params["show_logical_connections"] == "on":
+            show_logical_connections = True
+
+    show_single_cable_logical_conns = False
+    if "show_single_cable_logical_conns" in params:
+        if params["show_single_cable_logical_conns"] == "on":
+            show_single_cable_logical_conns = True
+
+    show_cables = False
+    if "show_cables" in params:
+        if params["show_cables"] == "on":
+            show_cables = True
+
+    show_neighbors = False
+    if "show_neighbors" in params:
+        if params["show_neighbors"] == "on":
+            show_neighbors = True
+
+    return (
+        save_coords,
+        show_unconnected,
+        show_power,
+        show_circuit,
+        show_logical_connections,
+        show_single_cable_logical_conns,
+        show_cables,
+        show_neighbors,
+    )
+
+
+def topology_request_flags(request):
+    """Build keyword arguments for ``get_topology_data`` from a Django or DRF request."""
+    (
+        save_coords,
+        show_unconnected,
+        show_power,
+        show_circuit,
+        show_logical_connections,
+        show_single_cable_logical_conns,
+        show_cables,
+        show_neighbors,
+    ) = get_query_settings(request)
+    qs = _request_query_dict(request)
+    group_id = "default" if "group" not in qs else qs["group"]
+    return {
+        "show_unconnected": show_unconnected,
+        "save_coords": save_coords,
+        "show_cables": show_cables,
+        "show_circuit": show_circuit,
+        "show_logical_connections": show_logical_connections,
+        "show_single_cable_logical_conns": show_single_cable_logical_conns,
+        "show_neighbors": show_neighbors,
+        "show_power": show_power,
+        "group_id": group_id,
+    }
+
+
+class LinePattern:  # pylint: disable=too-few-public-methods
+    """Dash patterns for vis.js edge rendering."""
+
+    power = [5, 5, 3, 3]
+    logical = [1, 10, 1, 10]
+
+
+def export_data_to_xml(data: dict):  # pylint: disable=too-many-branches,too-many-statements
+    """Serialize topology nodes/edges to draw.io-compatible mxGraph XML."""
+    if data is None:
+        return ""
+
+    # static xml header
+    doc = xml.dom.minidom.Document()
+    mxfile = doc.createElement("mxfile")
+    mxfile.setAttribute("host", "app.diagrams.net")
+    mxfile.setAttribute("type", "device")
+    diagram = doc.createElement("diagram")
+    diagram.setAttribute("name", "topology")
+    diagram.setAttribute("id", "someid")
+
+    doc.appendChild(mxfile)
+    mxfile.appendChild(diagram)
+
+    # mxGraphModel
+    mxgraphmodel = doc.createElement("mxGraphModel")
+    mxgraphmodel.setAttribute("dx", "0")
+    mxgraphmodel.setAttribute("dy", "0")
+    mxgraphmodel.setAttribute("grid", "0")
+    mxgraphmodel.setAttribute("guides", "1")
+    mxgraphmodel.setAttribute("tooltips", "1")
+    mxgraphmodel.setAttribute("connect", "1")
+    mxgraphmodel.setAttribute("arrows", "1")
+    mxgraphmodel.setAttribute("fold", "1")
+    mxgraphmodel.setAttribute("page", "1")
+    mxgraphmodel.setAttribute("pageScale", "1")
+    mxgraphmodel.setAttribute("pageWidth", "827")
+    mxgraphmodel.setAttribute("pageHeight", "1169")
+    mxgraphmodel.setAttribute("background", "none")
+    mxgraphmodel.setAttribute("math", "0")
+    mxgraphmodel.setAttribute("shadow", "0")
+
+    diagram.appendChild(mxgraphmodel)
+
+    # root
+    root = doc.createElement("root")
+
+    mxgraphmodel.appendChild(root)
+
+    # mxCells
+    # header
+    mxcell = doc.createElement("mxCell")
+    mxcell.setAttribute("id", "0")
+    root.appendChild(mxcell)
+    mxcell = doc.createElement("mxCell")
+    mxcell.setAttribute("id", "1")
+    mxcell.setAttribute("parent", "0")
+    root.appendChild(mxcell)
+
+    # edges
+    for edge in data["edges"]:
+        dashes = ""
+        if "dashes" in edge:
+            if edge["dashes"] == LinePattern.power:
+                dashes = "dashed=1;dashPattern=6 6;"
+            if edge["dashes"] == LinePattern.logical:
+                dashes = "dashed=1;dashPattern=1 4;strokeWidth=2;"
+
+        mxcell = doc.createElement("mxCell")
+        mxcell.setAttribute("id", "edge_" + str(edge["id"]))
+        mxcell.setAttribute(
+            "style",
+            "rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;strokeColor="
+            + edge["color"]
+            + ";"
+            + dashes,
+        )
+        mxcell.setAttribute("edge", "1")
+        mxcell.setAttribute("parent", "1")
+        mxcell.setAttribute("source", "node_" + str(edge["from"]))
+        mxcell.setAttribute("target", "node_" + str(edge["to"]))
+
+        root.appendChild(mxcell)
+
+        mxgeometry = doc.createElement("mxGeometry")
+        mxgeometry.setAttribute("relative", "1")
+        mxgeometry.setAttribute("as", "geometry")
+
+        mxcell.appendChild(mxgeometry)
+
+    # nodes
+    no_position_x = 0
+    no_position_y = 1000
+    for node in data["nodes"]:
+        with open(settings.STATIC_ROOT + "/" + get_image_from_url(node["image"]), "rb") as img:
+            svg = base64.b64encode(img.read()).decode("utf-8")
+        mxcell = doc.createElement("mxCell")
+        mxcell.setAttribute("id", "node_" + str(node["id"]))
+        mxcell.setAttribute("value", str(node["label"]))
+        mxcell.setAttribute(
+            "style",
+            "shape=image;verticalLabelPosition=bottom;verticalAlign=top;imageAspect=0;aspect=fixed;image=data:image/svg+xml,"
+            + svg
+            + ";perimeter=elippsePerimeter;fontSize=10;strokeWidth=1;fontColor=#000000;",
+        )
+        mxcell.setAttribute("vertex", "1")
+        mxcell.setAttribute("parent", "1")
+
+        root.appendChild(mxcell)
+
+        mxgeometry = doc.createElement("mxGeometry")
+        # Check if x and y values are stored in the database and set pseudo
+        # coordinates if not. Otherwise icons will not be exported / KeyError is raised
+        if "x" in node:
+            mxgeometry.setAttribute("x", str(node["x"]))
+        else:
+            # Set next pseudo coordinates
+            if no_position_x > 2500:
+                no_position_x = 100
+                no_position_y = no_position_y + 100
+            else:
+                no_position_x = no_position_x + 100
+
+            mxgeometry.setAttribute("x", str(no_position_x))
+        if "y" in node:
+            mxgeometry.setAttribute("y", str(node["y"]))
+        else:
+            mxgeometry.setAttribute("y", str(no_position_y))
+
+        mxgeometry.setAttribute("width", "50")
+        mxgeometry.setAttribute("height", "50")
+        mxgeometry.setAttribute("as", "geometry")
+
+        mxcell.appendChild(mxgeometry)
+
+    # Place a warning if one or more icons are misplaced because of missing coordinates
+    if no_position_x > 0:
+        mxcell = doc.createElement("mxCell")
+        mxcell.setAttribute("id", "noPositionWarning")
+        mxcell.setAttribute(
+            "value",
+            "One or more icons are misplaced. This happens if no coordinates are stored for a device. Turn on coordinates saving and make sure to drag all icons in the topology to a specific position before exporting to XML.",
+        )
+        mxcell.setAttribute(
+            "style",
+            "text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#FF0000;fontStyle=0;fontSize=35;labelBackgroundColor=#FFFF99;labelBorderColor=none;strokeWidth=20;",
+        )
+        mxcell.setAttribute("vertex", "1")
+        mxcell.setAttribute("parent", "1")
+
+        root.appendChild(mxcell)
+
+        mxgeometry = doc.createElement("mxGeometry")
+        mxgeometry.setAttribute("x", "0")
+        mxgeometry.setAttribute("y", "0")
+        mxgeometry.setAttribute("width", "870")
+        mxgeometry.setAttribute("height", "100")
+        mxgeometry.setAttribute("as", "geometry")
+
+        mxcell.appendChild(mxgeometry)
+
+    # debug output
+    # print(doc.toprettyxml())
+
+    return doc.toxml(encoding="UTF-8")
+
+
+def is_htmx(request):
+    """Return True if the request was made by HTMX."""
+    return "Hx-Request" in request.headers
+
+
+def is_embedded(request):
+    """Return True if the HTMX current URL path differs from the request path."""
+    hx_current_url = request.headers.get("HX-Current-URL", None)
+    if not hx_current_url:
+        return False
+    return request.path != urlparse(hx_current_url).path
+
+
+def get_selected_values(form, field_name):
+    """Return human-readable selected values for a form field."""
+    if not hasattr(form, "cleaned_data"):
+        form.is_valid()
+    filter_data = form.cleaned_data.get(field_name)
+    field = form.fields[field_name]
+
+    # Non-selection field
+    if not hasattr(field, "choices"):
+        return [str(filter_data)]
+
+    # Model choice field
+    if isinstance(field.choices, ModelChoiceIterator):
+        # If this is a single-choice field, wrap its value in a list
+        if not hasattr(filter_data, "__iter__"):
+            values = [filter_data]
+        else:
+            values = filter_data
+
+    else:
+        # Static selection field
+        choices = unpack_grouped_choices(field.choices)
+        if not isinstance(filter_data, (list, tuple)):
+            filter_data = [filter_data]  # Ensure filter data is iterable
+        values = [label for value, label in choices if str(value) in filter_data or None in filter_data]
+
+    # If the field has a `null_option` attribute set and it is selected,
+    # add it to the field's grouped choices.
+    if getattr(field, "null_option", None) and None in filter_data:
+        values.remove(None)
+        values.insert(0, field.null_option)
+
+    return values
+
+
+def unpack_grouped_choices(choices):
+    """Unpack a grouped choices hierarchy into a flat list of two-tuples.
+
+    Optgroups such as ``('Foo', ((1, 'A'), (2, 'B')))`` are flattened so each
+    inner ``(value, label)`` pair appears once in the result list.
+    """
+    unpacked_choices = []
+    for key, value in choices:
+        if isinstance(value, (list, tuple)):
+            # Entered an optgroup
+            for optgroup_key, optgroup_value in value:
+                unpacked_choices.append((optgroup_key, optgroup_value))
+        else:
+            unpacked_choices.append((key, value))
+    return unpacked_choices

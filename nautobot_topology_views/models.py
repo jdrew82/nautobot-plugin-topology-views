@@ -1,0 +1,369 @@
+"""Django models for nautobot_topology_views."""
+
+from pathlib import Path
+
+from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
+from django.urls import reverse
+from nautobot.apps.models import BaseModel
+from nautobot.circuits.models import Circuit
+from nautobot.dcim.models import Device, PowerFeed, PowerPanel
+
+from nautobot_topology_views.utils import (
+    CONF_IMAGE_DIR,
+    IMAGE_DIR,
+    find_image_url,
+    image_static_url,
+)
+
+
+class RoleImage(BaseModel):
+    """Mapping of a role or content type to a custom topology icon image."""
+
+    class Meta:
+        """Model metadata."""
+
+        indexes = [
+            models.Index(fields=["content_type", "object_id"]),
+        ]
+
+    objects: "models.Manager[RoleImage]"
+
+    image = models.CharField("Path within the Nautobot static directory", max_length=255)
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.UUIDField(null=True, blank=True)
+    model_role = GenericForeignKey(ct_field="content_type", fk_field="object_id")
+
+    # __model_role: Optional[ModelRole] = None
+
+    # @property
+    # def model_role(self) -> ModelRole:
+    #     if self.__model_role:
+    #         return self.__model_role
+
+    #     model_class = self.content_type.model_class()
+
+    #     if not model_class:
+    #         raise ValueError(f"Invalid content type: {self.content_type}")
+
+    #     if model_class == Role:
+    #         device_role: Role = Role.objects.get(pk=self.object_id)
+    #         self.__model_role = ModelRole(name=device_role.name)
+    #         return self.__model_role
+
+    #     self.__model_role = get_model_role(model_class)
+    #     return self.__model_role
+
+    def __str__(self):
+        """Return role and image path for display."""
+        return f"{self.model_role} - {self.image}"
+
+    def get_image(self) -> Path:
+        """Return the absolute filesystem path to the icon image.
+
+        Raises:
+            ValueError: If the file does not exist.
+        """
+        path = Path(settings.STATIC_ROOT) / self.image
+
+        if not path.exists():
+            raise ValueError(f"{self.model_role} path '{path}' does not exists")
+
+        return path
+
+    def get_default_image(self, image_dir: Path = CONF_IMAGE_DIR):
+        """Return a default image URL when the configured path is missing.
+
+        Searches ``image_dir`` for a file matching the role name (any extension),
+        then tries ``role-unknown``. Fallback is
+        ``STATIC_ROOT/nautobot_topology_views/img/role-unknown.png``.
+        """
+        if url := find_image_url(self.model_role.name, image_dir):
+            return url
+
+        # fallback to default role unknown image
+        return image_static_url(IMAGE_DIR / "role-unknown.png")
+
+    def get_image_url(self, image_dir: Path = CONF_IMAGE_DIR) -> str:
+        """Return static URL for the configured image, or a default role image."""
+        try:
+            path = self.get_image()
+        except ValueError:
+            return self.get_default_image(image_dir)
+        # Never pass a leading "/" to static(); it breaks finders (SuspiciousFileOperation).
+        return image_static_url(path)
+
+
+class CoordinateGroup(BaseModel):
+    """Group topology canvases so the same devices can appear in multiple layouts.
+
+    A coordinate group identifies one visualization; multiple groups allow
+    different layouts with the same device set.
+    """
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    class Meta:
+        """Model metadata."""
+
+        ordering = ["name"]
+
+    def __str__(self):
+        """Return the group name."""
+        return self.name
+
+    def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this coordinate group."""
+        if api:
+            return super().get_absolute_url(api=True)
+        return reverse("plugins:nautobot_topology_views:coordinategroup", args=[self.pk])
+
+
+def _resolve_default_coordinate_group_pk():
+    """Return primary key of the 'default' CoordinateGroup, creating it if needed."""
+    try:
+        existing = CoordinateGroup.objects.filter(name="default").first()
+        if existing:
+            return existing.pk
+        group = CoordinateGroup.objects.create(
+            name="default",
+            description="Automatically generated default group. If you delete "
+            "this group, all default coordinates are gone for good but "
+            "the group itself will be re-created.",
+        )
+        return group.pk
+    except Exception:  # pylint: disable=broad-exception-caught
+        return False
+
+
+class Coordinate(BaseModel):
+    """Store device position on a topology canvas within a coordinate group.
+
+    Each device may appear in multiple groups; ``device`` and ``group`` together
+    must be unique.
+    """
+
+    device = models.ForeignKey(Device, on_delete=models.CASCADE)
+    group = models.ForeignKey(CoordinateGroup, on_delete=models.CASCADE)
+
+    x = models.IntegerField(
+        help_text="X-coordinate of the device (horizontal) on the canvas. "
+        "Smaller values correspond to a position further to the left on the monitor.",
+    )
+    y = models.IntegerField(
+        help_text="Y-coordinate of the device (vertical) on the canvas. "
+        "Smaller values correspond to a position further up on the monitor.",
+    )
+
+    @staticmethod
+    def get_or_create_default_group(_group_id=None):
+        """Ensure the shared 'default' coordinate group exists; return its pk or False."""
+        return _resolve_default_coordinate_group_pk()
+
+    class Meta:
+        """Model metadata."""
+
+        ordering = ["group", "device"]
+        unique_together = ("device", "group")
+
+    def __str__(self):
+        """Return x and y as a semicolon-separated pair."""
+        return f"{self.x};{self.y}"
+
+    def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this coordinate."""
+        if api:
+            return super().get_absolute_url(api=True)
+        return reverse("plugins:nautobot_topology_views:coordinate", args=[self.pk])
+
+
+class CircuitCoordinate(BaseModel):
+    """Store circuit position on a topology canvas within a coordinate group.
+
+    Each circuit may appear in multiple groups; ``device`` and ``group`` together
+    must be unique.
+    """
+
+    device = models.ForeignKey(Circuit, on_delete=models.CASCADE)
+    group = models.ForeignKey(CoordinateGroup, on_delete=models.CASCADE)
+
+    x = models.IntegerField(
+        help_text="X-coordinate of the device (horizontal) on the canvas. "
+        "Smaller values correspond to a position further to the left on the monitor.",
+    )
+    y = models.IntegerField(
+        help_text="Y-coordinate of the device (vertical) on the canvas. "
+        "Smaller values correspond to a position further up on the monitor.",
+    )
+
+    @staticmethod
+    def get_or_create_default_group(_group_id=None):
+        """Ensure the shared 'default' coordinate group exists; return its pk or False."""
+        return _resolve_default_coordinate_group_pk()
+
+    class Meta:
+        """Model metadata."""
+
+        ordering = ["group", "device"]
+        unique_together = ("device", "group")
+
+    def __str__(self):
+        """Return x and y as a semicolon-separated pair."""
+        return f"{self.x};{self.y}"
+
+    def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this circuit coordinate."""
+        if api:
+            return super().get_absolute_url(api=True)
+        return reverse("plugins:nautobot_topology_views:circuitcoordinate", args=[self.pk])
+
+
+class PowerPanelCoordinate(BaseModel):
+    """Store power panel position on a topology canvas within a coordinate group.
+
+    Each panel may appear in multiple groups; ``device`` and ``group`` together
+    must be unique.
+    """
+
+    device = models.ForeignKey(PowerPanel, on_delete=models.CASCADE)
+    group = models.ForeignKey(CoordinateGroup, on_delete=models.CASCADE)
+
+    x = models.IntegerField(
+        help_text="X-coordinate of the device (horizontal) on the canvas. "
+        "Smaller values correspond to a position further to the left on the monitor.",
+    )
+    y = models.IntegerField(
+        help_text="Y-coordinate of the device (vertical) on the canvas. "
+        "Smaller values correspond to a position further up on the monitor.",
+    )
+
+    @staticmethod
+    def get_or_create_default_group(_group_id=None):
+        """Ensure the shared 'default' coordinate group exists; return its pk or False."""
+        return _resolve_default_coordinate_group_pk()
+
+    class Meta:
+        """Model metadata."""
+
+        ordering = ["group", "device"]
+        unique_together = ("device", "group")
+
+    def __str__(self):
+        """Return x and y as a semicolon-separated pair."""
+        return f"{self.x};{self.y}"
+
+    def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this power panel coordinate."""
+        if api:
+            return super().get_absolute_url(api=True)
+        return reverse("plugins:nautobot_topology_views:powerpanelcoordinate", args=[self.pk])
+
+
+class PowerFeedCoordinate(BaseModel):
+    """Store power feed position on a topology canvas within a coordinate group.
+
+    Each feed may appear in multiple groups; ``device`` and ``group`` together
+    must be unique.
+    """
+
+    device = models.ForeignKey(PowerFeed, on_delete=models.CASCADE)
+    group = models.ForeignKey(CoordinateGroup, on_delete=models.CASCADE)
+
+    x = models.IntegerField(
+        help_text="X-coordinate of the device (horizontal) on the canvas. "
+        "Smaller values correspond to a position further to the left on the monitor.",
+    )
+    y = models.IntegerField(
+        help_text="Y-coordinate of the device (vertical) on the canvas. "
+        "Smaller values correspond to a position further up on the monitor.",
+    )
+
+    @staticmethod
+    def get_or_create_default_group(_group_id=None):
+        """Ensure the shared 'default' coordinate group exists; return its pk or False."""
+        return _resolve_default_coordinate_group_pk()
+
+    class Meta:
+        """Model metadata."""
+
+        ordering = ["group", "device"]
+        unique_together = ("device", "group")
+
+    def __str__(self):
+        """Return x and y as a semicolon-separated pair."""
+        return f"{self.x};{self.y}"
+
+    def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this power feed coordinate."""
+        if api:
+            return super().get_absolute_url(api=True)
+        return reverse("plugins:nautobot_topology_views:powerfeedcoordinate", args=[self.pk])
+
+
+INDIVIDUAL_OPTIONS_BOOL_DISPLAY_FIELDS = (
+    "save_coords",
+    "show_unconnected",
+    "show_cables",
+    "show_logical_connections",
+    "show_single_cable_logical_conns",
+    "show_neighbors",
+    "show_circuit",
+    "show_power",
+    "draw_default_layout",
+)
+
+
+class IndividualOptions(BaseModel):
+    """Per-user display preferences for the topology view."""
+
+    CHOICES = (
+        ("interface", "interface"),
+        ("front port", "front port"),
+        ("rear port", "rear port"),
+        ("power outlet", "power outlet"),
+        ("power port", "power port"),
+        ("console port", "console port"),
+        ("console server port", "console server port"),
+    )
+
+    user_id = models.UUIDField(null=True, unique=True)
+    ignore_cable_type = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+    preselected_device_roles = models.ManyToManyField(
+        to="extras.Role",
+        related_name="+",
+        blank=True,
+        db_table="nautobot_topology_views_individualoptions_preselected_device",
+    )
+    preselected_tags = models.ManyToManyField(
+        to="extras.Tag",
+        related_name="+",
+        blank=True,
+        db_table="nautobot_topology_views_individualoptions_preselected_tag",
+    )
+    save_coords = models.BooleanField(default=False)
+    show_unconnected = models.BooleanField(default=False)
+    show_cables = models.BooleanField(default=False)
+    show_logical_connections = models.BooleanField(default=False)
+    show_single_cable_logical_conns = models.BooleanField(default=False)
+    show_neighbors = models.BooleanField(default=False)
+    show_circuit = models.BooleanField(default=False)
+    show_power = models.BooleanField(default=False)
+    draw_default_layout = models.BooleanField(default=False)
+
+    def __str__(self):
+        """Return the stored user id as text."""
+        return f"{self.user_id}"
