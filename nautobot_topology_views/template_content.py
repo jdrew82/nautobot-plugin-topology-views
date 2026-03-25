@@ -9,6 +9,7 @@ class LocationButtons(TemplateExtension):  # pylint: disable=abstract-method
     model = "dcim.location"
 
     def buttons(self):
+        """Render topology shortcut buttons on Location detail pages."""
         return self.render("nautobot_topology_views/location_button.html")
 
 

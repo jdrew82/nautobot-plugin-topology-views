@@ -126,11 +126,11 @@ def find_image_in_dir(name: str, image_dir: Path):
 
 @lru_cache(maxsize=50)
 def find_image_url(name: str, image_dir: Path = CONF_IMAGE_DIR):
-    """
-    will attempt to find a file that matches glob in given directory with any file extension,
-    otherwise will try to find a `role-unknown` image
+    """Resolve a role image to a static URL.
 
-    returns static file url
+    Searches ``image_dir`` for a matching basename with any allowed extension,
+    then falls back to ``role-unknown``. Returns the static file URL or an empty
+    string if nothing is found.
     """
     if file := find_image_in_dir(name, image_dir):
         return image_static_url(file)
@@ -425,17 +425,12 @@ def export_data_to_xml(data: dict):  # pylint: disable=too-many-branches,too-man
 
 
 def is_htmx(request):
-    """
-    Returns True if the request was made by HTMX; False otherwise.
-    """
+    """Return True if the request was made by HTMX."""
     return "Hx-Request" in request.headers
 
 
 def is_embedded(request):
-    """
-    Returns True if the request indicates that it originates from a URL different from
-    the path being requested.
-    """
+    """Return True if the HTMX current URL path differs from the request path."""
     hx_current_url = request.headers.get("HX-Current-URL", None)
     if not hx_current_url:
         return False
@@ -443,9 +438,7 @@ def is_embedded(request):
 
 
 def get_selected_values(form, field_name):
-    """
-    Return the list of selected human-friendly values for a form field
-    """
+    """Return human-readable selected values for a form field."""
     if not hasattr(form, "cleaned_data"):
         form.is_valid()
     filter_data = form.cleaned_data.get(field_name)
@@ -480,28 +473,10 @@ def get_selected_values(form, field_name):
 
 
 def unpack_grouped_choices(choices):
-    """
-    Unpack a grouped choices hierarchy into a flat list of two-tuples. For example:
+    """Unpack a grouped choices hierarchy into a flat list of two-tuples.
 
-    choices = (
-        ('Foo', (
-            (1, 'A'),
-            (2, 'B')
-        )),
-        ('Bar', (
-            (3, 'C'),
-            (4, 'D')
-        ))
-    )
-
-    becomes:
-
-    choices = (
-        (1, 'A'),
-        (2, 'B'),
-        (3, 'C'),
-        (4, 'D')
-    )
+    Optgroups such as ``('Foo', ((1, 'A'), (2, 'B')))`` are flattened so each
+    inner ``(value, label)`` pair appears once in the result list.
     """
     unpacked_choices = []
     for key, value in choices:

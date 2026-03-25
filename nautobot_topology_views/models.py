@@ -23,6 +23,8 @@ class RoleImage(BaseModel):
     """Mapping of a role or content type to a custom topology icon image."""
 
     class Meta:
+        """Model metadata."""
+
         indexes = [
             models.Index(fields=["content_type", "object_id"]),
         ]
@@ -56,13 +58,14 @@ class RoleImage(BaseModel):
     #     return self.__model_role
 
     def __str__(self):
+        """Return role and image path for display."""
         return f"{self.model_role} - {self.image}"
 
     def get_image(self) -> Path:
-        """Get Icon
+        """Return the absolute filesystem path to the icon image.
 
-        returns the model's image's absolute path in the filesystem
-        raises ValueError if the file cannot be found
+        Raises:
+            ValueError: If the file does not exist.
         """
         path = Path(settings.STATIC_ROOT) / self.image
 
@@ -72,12 +75,11 @@ class RoleImage(BaseModel):
         return path
 
     def get_default_image(self, image_dir: Path = CONF_IMAGE_DIR):
-        """Get default image
+        """Return a default image URL when the configured path is missing.
 
-        will attempt to find image in given directory with any file extension,
-        otherwise will try to find a `role-unknown` image
-
-        fallback is `STATIC_ROOT/nautobot_topology_views/img/role-unknown.png`
+        Searches ``image_dir`` for a file matching the role name (any extension),
+        then tries ``role-unknown``. Fallback is
+        ``STATIC_ROOT/nautobot_topology_views/img/role-unknown.png``.
         """
         if url := find_image_url(self.model_role.name, image_dir):
             return url
@@ -96,9 +98,10 @@ class RoleImage(BaseModel):
 
 
 class CoordinateGroup(BaseModel):
-    """
-    A coordinate group is used to display the topology for a particular group.
-    This allows different visualizations with the same devices.
+    """Group topology canvases so the same devices can appear in multiple layouts.
+
+    A coordinate group identifies one visualization; multiple groups allow
+    different layouts with the same device set.
     """
 
     name = models.CharField(
@@ -112,12 +115,16 @@ class CoordinateGroup(BaseModel):
     )
 
     class Meta:
+        """Model metadata."""
+
         ordering = ["name"]
 
     def __str__(self):
+        """Return the group name."""
         return self.name
 
     def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this coordinate group."""
         if api:
             return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:coordinategroup", args=[self.pk])
@@ -141,10 +148,10 @@ def _resolve_default_coordinate_group_pk():
 
 
 class Coordinate(BaseModel):
-    """
-    Coordinates are being used to place devices in a topology view onto a certain
-    position. Devices belong to one or more coordinate groups. They have to
-    be unique together.
+    """Store device position on a topology canvas within a coordinate group.
+
+    Each device may appear in multiple groups; ``device`` and ``group`` together
+    must be unique.
     """
 
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
@@ -165,23 +172,27 @@ class Coordinate(BaseModel):
         return _resolve_default_coordinate_group_pk()
 
     class Meta:
+        """Model metadata."""
+
         ordering = ["group", "device"]
         unique_together = ("device", "group")
 
     def __str__(self):
+        """Return x and y as a semicolon-separated pair."""
         return f"{self.x};{self.y}"
 
     def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this coordinate."""
         if api:
             return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:coordinate", args=[self.pk])
 
 
 class CircuitCoordinate(BaseModel):
-    """
-    Coordinates are being used to place devices in a topology view onto a certain
-    position. Devices belong to one or more coordinate groups. They have to
-    be unique together.
+    """Store circuit position on a topology canvas within a coordinate group.
+
+    Each circuit may appear in multiple groups; ``device`` and ``group`` together
+    must be unique.
     """
 
     device = models.ForeignKey(Circuit, on_delete=models.CASCADE)
@@ -202,23 +213,27 @@ class CircuitCoordinate(BaseModel):
         return _resolve_default_coordinate_group_pk()
 
     class Meta:
+        """Model metadata."""
+
         ordering = ["group", "device"]
         unique_together = ("device", "group")
 
     def __str__(self):
+        """Return x and y as a semicolon-separated pair."""
         return f"{self.x};{self.y}"
 
     def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this circuit coordinate."""
         if api:
             return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:circuitcoordinate", args=[self.pk])
 
 
 class PowerPanelCoordinate(BaseModel):
-    """
-    Coordinates are being used to place devices in a topology view onto a certain
-    position. Devices belong to one or more coordinate groups. They have to
-    be unique together.
+    """Store power panel position on a topology canvas within a coordinate group.
+
+    Each panel may appear in multiple groups; ``device`` and ``group`` together
+    must be unique.
     """
 
     device = models.ForeignKey(PowerPanel, on_delete=models.CASCADE)
@@ -239,23 +254,27 @@ class PowerPanelCoordinate(BaseModel):
         return _resolve_default_coordinate_group_pk()
 
     class Meta:
+        """Model metadata."""
+
         ordering = ["group", "device"]
         unique_together = ("device", "group")
 
     def __str__(self):
+        """Return x and y as a semicolon-separated pair."""
         return f"{self.x};{self.y}"
 
     def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this power panel coordinate."""
         if api:
             return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:powerpanelcoordinate", args=[self.pk])
 
 
 class PowerFeedCoordinate(BaseModel):
-    """
-    Coordinates are being used to place devices in a topology view onto a certain
-    position. Devices belong to one or more coordinate groups. They have to
-    be unique together.
+    """Store power feed position on a topology canvas within a coordinate group.
+
+    Each feed may appear in multiple groups; ``device`` and ``group`` together
+    must be unique.
     """
 
     device = models.ForeignKey(PowerFeed, on_delete=models.CASCADE)
@@ -276,13 +295,17 @@ class PowerFeedCoordinate(BaseModel):
         return _resolve_default_coordinate_group_pk()
 
     class Meta:
+        """Model metadata."""
+
         ordering = ["group", "device"]
         unique_together = ("device", "group")
 
     def __str__(self):
+        """Return x and y as a semicolon-separated pair."""
         return f"{self.x};{self.y}"
 
     def get_absolute_url(self, api=False):
+        """Return the UI or API URL for this power feed coordinate."""
         if api:
             return super().get_absolute_url(api=True)
         return reverse("plugins:nautobot_topology_views:powerfeedcoordinate", args=[self.pk])
@@ -342,4 +365,5 @@ class IndividualOptions(BaseModel):
     draw_default_layout = models.BooleanField(default=False)
 
     def __str__(self):
+        """Return the stored user id as text."""
         return f"{self.user_id}"

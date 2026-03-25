@@ -115,6 +115,8 @@ class DeviceFilterSet(NautobotFilterSet, TenancyModelFilterSetMixin):  # pylint:
     )
 
     class Meta:
+        """FilterSet configuration."""
+
         model = Device
         fields = "__all__"
 
@@ -170,6 +172,8 @@ class CircuitCoordinateFilterSet(NautobotFilterSet):
     )
 
     class Meta:
+        """FilterSet configuration."""
+
         model = CircuitCoordinate
         fields = "__all__"
 
@@ -192,6 +196,8 @@ class PowerPanelCoordinateFilterSet(NautobotFilterSet):
     )
 
     class Meta:
+        """FilterSet configuration."""
+
         model = PowerPanelCoordinate
         fields = "__all__"
 
@@ -214,6 +220,8 @@ class PowerFeedCoordinateFilterSet(NautobotFilterSet):
     )
 
     class Meta:
+        """FilterSet configuration."""
+
         model = PowerFeedCoordinate
         fields = "__all__"
 
@@ -236,5 +244,7 @@ class CoordinateFilterSet(NautobotFilterSet):
     )
 
     class Meta:
+        """FilterSet configuration."""
+
         model = Coordinate
         fields = "__all__"

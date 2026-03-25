@@ -174,6 +174,8 @@ class CoordinateGroupsForm(forms.ModelForm):
     fieldsets = (("Group Details", ("name", "description")),)
 
     class Meta:
+        """Model metadata."""
+
         model = CoordinateGroup
         fields = ("name", "description")
 
@@ -182,6 +184,8 @@ class CoordinateGroupsImportForm(forms.ModelForm):
     """Form for bulk importing CoordinateGroup objects."""
 
     class Meta:
+        """Model metadata."""
+
         model = CoordinateGroup
         fields = ("name", "description")
 
@@ -192,6 +196,8 @@ class CircuitCoordinatesForm(forms.ModelForm):
     fieldsets = (("CircuitCoordinate", ("group", "device", "x", "y")),)
 
     class Meta:
+        """Model metadata."""
+
         model = CircuitCoordinate
         fields = ("group", "device", "x", "y")
 
@@ -202,6 +208,8 @@ class PowerPanelCoordinatesForm(forms.ModelForm):
     fieldsets = (("PowerPanel", ("group", "device", "x", "y")),)
 
     class Meta:
+        """Model metadata."""
+
         model = PowerPanelCoordinate
         fields = ("group", "device", "x", "y")
 
@@ -212,6 +220,8 @@ class PowerFeedCoordinatesForm(forms.ModelForm):
     fieldsets = (("PowerFeedCoordinate", ("group", "device", "x", "y")),)
 
     class Meta:
+        """Model metadata."""
+
         model = PowerFeedCoordinate
         fields = ("group", "device", "x", "y")
 
@@ -222,6 +232,8 @@ class CoordinatesForm(forms.ModelForm):
     fieldsets = (("Coordinate", ("group", "device", "x", "y")),)
 
     class Meta:
+        """Model metadata."""
+
         model = Coordinate
         fields = ("group", "device", "x", "y")
 
@@ -230,6 +242,8 @@ class CircuitCoordinatesImportForm(forms.ModelForm):
     """Form for bulk importing CircuitCoordinate objects."""
 
     class Meta:
+        """Model metadata."""
+
         model = CircuitCoordinate
         fields = ("group", "device", "x", "y")
 
@@ -238,6 +252,8 @@ class PowerPanelCoordinatesImportForm(forms.ModelForm):
     """Form for bulk importing PowerPanelCoordinate objects."""
 
     class Meta:
+        """Model metadata."""
+
         model = PowerPanelCoordinate
         fields = ("group", "device", "x", "y")
 
@@ -246,6 +262,8 @@ class PowerFeedCoordinatesImportForm(forms.ModelForm):
     """Form for bulk importing PowerFeedCoordinate objects."""
 
     class Meta:
+        """Model metadata."""
+
         model = PowerFeedCoordinate
         fields = ("group", "device", "x", "y")
 
@@ -254,6 +272,8 @@ class CoordinatesImportForm(forms.ModelForm):
     """Form for bulk importing Coordinate objects."""
 
     class Meta:
+        """Model metadata."""
+
         model = Coordinate
         fields = ("group", "device", "x", "y")
 
@@ -449,6 +469,8 @@ class IndividualOptionsForm(forms.ModelForm):
     )
 
     class Meta:
+        """Model metadata."""
+
         model = IndividualOptions
         fields = [
             "user_id",

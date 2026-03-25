@@ -19,6 +19,8 @@ class CoordinateGroupTable(BaseTable):
     devices = tables.Column()
 
     class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
+        """Table configuration."""
+
         model = CoordinateGroup
         fields = ("pk", "id", "name", "description", "devices")
         default_columns = ("name", "description", "devices")
@@ -32,6 +34,8 @@ class CircuitCoordinateTable(BaseTable):
     device = tables.Column(linkify=True)
 
     class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
+        """Table configuration."""
+
         model = CircuitCoordinate
         fields = ("pk", "id", "group", "device", "x", "y")
         default_columns = ("id", "group", "device", "x", "y")
@@ -45,6 +49,8 @@ class PowerPanelCoordinateTable(BaseTable):
     device = tables.Column(linkify=True)
 
     class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
+        """Table configuration."""
+
         model = PowerPanelCoordinate
         fields = ("pk", "id", "group", "device", "x", "y")
         default_columns = ("id", "group", "device", "x", "y")
@@ -58,6 +64,8 @@ class PowerFeedCoordinateTable(BaseTable):
     device = tables.Column(linkify=True)
 
     class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
+        """Table configuration."""
+
         model = PowerFeedCoordinate
         fields = ("pk", "id", "group", "device", "x", "y")
         default_columns = ("id", "group", "device", "x", "y")
@@ -71,6 +79,8 @@ class CoordinateTable(BaseTable):
     device = tables.Column(linkify=True)
 
     class Meta(BaseTable.Meta):  # pylint: disable=too-few-public-methods
+        """Table configuration."""
+
         model = Coordinate
         fields = ("pk", "id", "group", "device", "x", "y")
         default_columns = ("id", "group", "device", "x", "y")

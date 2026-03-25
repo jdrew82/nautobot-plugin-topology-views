@@ -3,7 +3,6 @@
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.db import transaction
-
 from nautobot.circuits.models import Circuit, CircuitTermination, CircuitType, Provider
 from nautobot.dcim.choices import InterfaceTypeChoices
 from nautobot.dcim.models import (
@@ -100,6 +99,7 @@ class Command(BaseCommand):
     help = "Populate Nautobot with demo network topology data for the Topology Views app."
 
     def add_arguments(self, parser):
+        """Register command-line arguments including ``--flush``."""
         parser.add_argument(
             "--flush",
             action="store_true",
@@ -107,6 +107,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Populate demo topology data or flush objects tagged as demo."""
         if options["flush"]:
             self._flush()
             return
