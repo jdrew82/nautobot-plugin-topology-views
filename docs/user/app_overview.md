@@ -1,12 +1,14 @@
 # App Overview
 
-This document provides an overview of the App including critical information and import considerations when applying it to your Nautobot environment.
+This document provides an overview of the App including critical information and important considerations when applying it to your Nautobot environment.
 
 !!! note
     Throughout this documentation, the terms "app" and "plugin" will be used interchangeably.
 
 ## Description
 
+![Main Page](../media/ss_main_page_light.png#only-light)
+![Main Page](../media/ss_main_page_dark.png#only-dark)
 
 ## Audience (User Personas) - Who should use this App?
 
@@ -21,7 +23,7 @@ This document provides an overview of the App including critical information and
 ## Nautobot Features Used
 
 !!! warning "Developer Note - Remove Me!"
-    What is shown today in the Installed Plugins page in Nautobot. What parts of Nautobot does it interact with, what does it add etc. ?
+    What is shown today in the Installed Apps page in Nautobot. What parts of Nautobot does it interact with, what does it add etc. ?
 
 ### Extras
 

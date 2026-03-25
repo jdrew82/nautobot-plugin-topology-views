@@ -1,1 +1,1 @@
-::: nautobot_topology_views
+::: topology_views
