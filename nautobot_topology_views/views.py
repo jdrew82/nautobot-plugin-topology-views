@@ -5,10 +5,12 @@
 
 import json
 import time
+import uuid
 from functools import reduce
 from itertools import chain
-from typing import DefaultDict, Dict, Optional, Union
+from typing import DefaultDict, Dict, List, Optional, Union
 
+from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -97,11 +99,40 @@ from nautobot_topology_views.utils import (
     topology_request_flags,
 )
 
+
+def get_topology_plugin_api_base_path():
+    """Path segment for plugin REST API (``/api/plugins/<this>/...``). Uses app ``base_url``, not Django ``label``."""
+    cfg = apps.get_app_config("nautobot_topology_views")
+    slug = cfg.base_url or cfg.label
+    return f"api/plugins/{slug}"
+
+
 _TOPOLOGY_NON_FILTER_PARAMS = (
     frozenset(ObjectListViewMixin.non_filter_params)
-    | frozenset(("draw_init", "group"))
+    | frozenset(("draw_init", "group", "topology_include"))
     | frozenset(f for f in INDIVIDUAL_OPTIONS_BOOL_DISPLAY_FIELDS if f != "draw_default_layout")
 )
+
+
+def parse_topology_include_device_pks(request: HttpRequest) -> List[Union[uuid.UUID, int]]:
+    """Collect device primary keys from repeated ``topology_include`` query params (UUID or int)."""
+    params = getattr(request, "query_params", request.GET)
+    raw = params.getlist("topology_include")
+    pks: List[Union[uuid.UUID, int]] = []
+    for item in raw:
+        if item in (None, ""):
+            continue
+        s = str(item).strip()
+        if not s:
+            continue
+        try:
+            pks.append(uuid.UUID(s))
+            continue
+        except ValueError:
+            pass
+        if s.isdigit():
+            pks.append(int(s))
+    return pks
 
 
 def get_topology_filter_display_params(request, queryset):
@@ -119,8 +150,18 @@ def get_topology_dynamic_filter_form():
 def filtered_topology_devices_and_options(request, user):
     """Apply DeviceFilterSet to all devices and load or create IndividualOptions for the user."""
     params = getattr(request, "query_params", request.GET)
-    queryset = Device.objects.all().select_related("device_type", "role")
-    queryset = DeviceFilterSet(params, queryset).qs
+    base = Device.objects.all().select_related("device_type", "role")
+    filtered_qs = DeviceFilterSet(params, base).qs
+    include_pks = parse_topology_include_device_pks(request)
+    if include_pks:
+        # Do not use ``filtered_qs | extra``: FilterSet may use .distinct(); OR mixes unique/non-unique queries.
+        queryset = (
+            Device.objects.filter(Q(pk__in=filtered_qs) | Q(pk__in=include_pks))
+            .select_related("device_type", "role")
+            .distinct()
+        )
+    else:
+        queryset = filtered_qs
     individual_options, _ = IndividualOptions.objects.get_or_create(user_id=user.id)
     return queryset, individual_options
 
@@ -694,6 +735,7 @@ class TopologyHomeView(PermissionRequiredMixin, View):
                     "broken_image": find_image_url("role-unknown"),
                     "epoch": int(time.time()),
                     "basepath": settings.FORCE_SCRIPT_NAME or "",
+                    "topology_plugin_api_base": get_topology_plugin_api_base_path(),
                 },
             )
 
@@ -708,6 +750,7 @@ class TopologyHomeView(PermissionRequiredMixin, View):
                 "broken_image": find_image_url("role-unknown"),
                 "model": self.model,
                 "basepath": settings.FORCE_SCRIPT_NAME or "",
+                "topology_plugin_api_base": get_topology_plugin_api_base_path(),
             },
         )
 
@@ -779,6 +822,7 @@ class TopologyImagesView(PermissionRequiredMixin, View):
                 "roles": sorted(list(roles.values()), key=lambda r: r["name"]),
                 "images": images,
                 "basepath": settings.FORCE_SCRIPT_NAME or "",
+                "topology_plugin_api_base": get_topology_plugin_api_base_path(),
             },
         )
 

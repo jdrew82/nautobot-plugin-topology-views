@@ -1,14 +1,16 @@
 """REST API views for nautobot_topology_views."""
 
+import uuid
 from typing import Dict
 
 from django.conf import settings
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import HttpResponse, JsonResponse
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from nautobot.circuits.models import Circuit
-from nautobot.dcim.models import Device, PowerFeed, PowerPanel
+from nautobot.dcim.models import Cable, Device, Interface, PowerFeed, PowerPanel
 from nautobot.extras.api.views import NautobotModelViewSet
 from nautobot.extras.models import Role
 from rest_framework.decorators import action
@@ -21,7 +23,11 @@ from nautobot_topology_views.api.serializers import (
     TopologyDummySerializer,
 )
 from nautobot_topology_views.models import CoordinateGroup, RoleImage
-from nautobot_topology_views.utils import export_data_to_xml, get_image_from_url
+from nautobot_topology_views.utils import (
+    export_data_to_xml,
+    get_image_from_url,
+    topology_request_flags,
+)
 from nautobot_topology_views.views import (
     filtered_topology_devices_and_options,
     topology_data_from_request,
@@ -123,6 +129,115 @@ class ExportTopoToXML(PermissionRequiredMixin, ViewSet):
         xml_data = export_data_to_xml(topo_data).decode("utf-8")
 
         return HttpResponse(xml_data, content_type="application/xml; charset=utf-8")
+
+
+@extend_schema(exclude=True)
+class TopologyDataViewSet(PermissionRequiredMixin, ViewSet):
+    """API endpoint returning the same topology graph JSON as the UI (for refresh without full page load)."""
+
+    permission_required = ("dcim.view_location", "dcim.view_device")
+
+    queryset = Device.objects.none()
+    serializer_class = TopologyDummySerializer
+
+    def list(self, request):
+        """Return nodes, edges, and coordinate group id for the current filter query string."""
+        queryset, individual_options = filtered_topology_devices_and_options(request, request.user)
+
+        params = getattr(request, "query_params", request.GET)
+        if not params:
+            return JsonResponse({"status": "Missing or malformed request parameters"}, status=400)
+
+        topo_data = topology_data_from_request(request, queryset, individual_options)
+        flags = topology_request_flags(request)
+        if topo_data is None:
+            topo_data = {"nodes": [], "edges": [], "group": flags["group_id"]}
+
+        return Response(topo_data)
+
+
+@extend_schema_view(
+    quick_device=extend_schema(exclude=True),
+    quick_cable=extend_schema(exclude=True),
+)
+class TopologyMutationViewSet(ViewSet):
+    """Plugin helpers for creating devices and cables from the topology UI (validated_save, session auth)."""
+
+    queryset = Device.objects.none()
+    serializer_class = TopologyDummySerializer
+
+    @action(detail=False, methods=["post"], url_path="quick-device")
+    def quick_device(self, request):
+        """Create a device with the minimum fields required for Nautobot validation."""
+        if not request.user.has_perm("dcim.add_device"):
+            return Response({"detail": "You do not have permission to add devices."}, status=403)
+
+        name = request.data.get("name")
+        device_type = request.data.get("device_type")
+        role = request.data.get("role")
+        location = request.data.get("location")
+        status = request.data.get("status")
+        if not name or not all((device_type, role, location, status)):
+            return Response(
+                {"detail": "Required: name, device_type, role, location, status (UUIDs for FKs)."},
+                status=400,
+            )
+        try:
+            device = Device(
+                name=str(name).strip(),
+                device_type_id=uuid.UUID(str(device_type)),
+                role_id=uuid.UUID(str(role)),
+                location_id=uuid.UUID(str(location)),
+                status_id=uuid.UUID(str(status)),
+            )
+            device.validated_save()
+        except (ValueError, TypeError):
+            return Response({"detail": "Invalid UUID in request body."}, status=400)
+        except DjangoValidationError as exc:
+            return Response({"detail": getattr(exc, "message_dict", str(exc))}, status=400)
+
+        return Response({"id": str(device.pk), "name": device.name, "display": str(device)})
+
+    @action(detail=False, methods=["post"], url_path="quick-cable")
+    def quick_cable(self, request):
+        """Create a cable between two interfaces using the default Connected cable status."""
+        if not request.user.has_perm("dcim.add_cable"):
+            return Response({"detail": "You do not have permission to add cables."}, status=403)
+
+        term_a = request.data.get("termination_a_id")
+        term_b = request.data.get("termination_b_id")
+        if not term_a or not term_b:
+            return Response({"detail": "Required: termination_a_id, termination_b_id (interface UUIDs)."}, status=400)
+        try:
+            uuid_a = uuid.UUID(str(term_a))
+            uuid_b = uuid.UUID(str(term_b))
+        except (ValueError, TypeError):
+            return Response({"detail": "Invalid interface UUID."}, status=400)
+
+        if uuid_a == uuid_b:
+            return Response({"detail": "A cable cannot connect an interface to itself."}, status=400)
+
+        iface_ct = ContentType.objects.get_for_model(Interface)
+        status_connected = Cable.STATUS_CONNECTED
+        if status_connected is None:
+            return Response(
+                {"detail": "Nautobot is missing a 'Connected' status for dcim.cable; configure statuses."},
+                status=500,
+            )
+
+        cable = Cable(
+            termination_a_type_id=iface_ct.pk,
+            termination_a_id=uuid_a,
+            termination_b_type_id=iface_ct.pk,
+            termination_b_id=uuid_b,
+            status=status_connected,
+        )
+        try:
+            cable.validated_save()
+        except DjangoValidationError as exc:
+            return Response({"detail": getattr(exc, "message_dict", str(exc))}, status=400)
+
+        return Response({"id": str(cable.pk), "display": str(cable)})
 
 
 class SaveRoleImageViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancestors

@@ -1,4 +1,5 @@
 {% load static %}
+{% load perms %}
 
 <link rel="stylesheet" href="{% static 'nautobot_topology_views/css/vendor.css' %}">
 <link rel="stylesheet" href="{% static 'nautobot_topology_views/css/app.css' %}">
@@ -6,7 +7,22 @@
 <div class="modal-header">
     <h5 class="modal-title">Topology Views</h5>
     <div class="controls">
-    	<div class="control-group">
+    	<div class="control-group d-flex flex-wrap align-items-center gap-4">
+			<div class="input-group input-group-sm topology-node-search" style="max-width: 200px;">
+				<input type="search" id="topology-node-search" class="form-control" placeholder="Find…" aria-label="Find device on topology" autocomplete="off">
+				<button type="button" class="btn btn-outline-secondary" id="topology-node-search-btn" title="Focus matching node">
+					<span class="mdi mdi-magnify" aria-hidden="true"></span>
+				</button>
+			</div>
+			<button type="button" class="btn btn-sm btn-outline-primary" id="btnTopologyAddDevice" title="Add device"><span class="mdi mdi-lan-connect" aria-hidden="true"></span></button>
+			<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTopologyRefresh" title="Reload graph from server"><span class="mdi mdi-refresh" aria-hidden="true"></span></button>
+			<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTopologyHierarchy" title="Hierarchical layout"><span class="mdi mdi-file-tree" aria-hidden="true"></span></button>
+			<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTopologyOrganic" title="Organic force-directed layout"><span class="mdi mdi-chart-scatter-plot" aria-hidden="true"></span></button>
+			<div class="btn-group btn-group-sm" role="group" aria-label="Zoom">
+				<button type="button" class="btn btn-outline-secondary" id="btnTopologyZoomOut" title="Zoom out"><span class="mdi mdi-minus" aria-hidden="true"></span></button>
+				<button type="button" class="btn btn-outline-secondary" id="btnTopologyZoomIn" title="Zoom in"><span class="mdi mdi-plus" aria-hidden="true"></span></button>
+				<button type="button" class="btn btn-outline-secondary" id="btnTopologyFit" title="Fit view"><span class="mdi mdi-fit-to-screen-outline" aria-hidden="true"></span></button>
+			</div>
 			{% block extra_controls %}{% endblock extra_controls %}
 			<a id="btnDownloadXml" class="btn btn-sm btn-info" href="#">
 				<i class="mdi mdi-download"></i>
@@ -30,6 +46,8 @@
     </div>
 </div>
 
+{% include "nautobot_topology_views/includes/topology_add_device_modal.html" %}
+
 <style type="text/css">
     .modal-dialog {
         max-width: 902px !important;
@@ -40,5 +58,12 @@
     var is_htmx = true;
     var brokenImage = '{{ broken_image }}';
     var topologyData = {{ topology_data | safe }};
+    var basePath = '{{ basepath }}';
+    window.topologyPluginApiBasePath = '{{ topology_plugin_api_base }}';
+    window.topologyUiPermissions = {
+        addDevice: {% if perms.dcim.add_device %}true{% else %}false{% endif %},
+        addCable: {% if perms.dcim.add_cable %}true{% else %}false{% endif %},
+        viewDevice: {% if perms.dcim.view_device %}true{% else %}false{% endif %}
+    };
 </script>
 <script src="{% static 'nautobot_topology_views/js/app.js' %}?ver={{ epoch }} " defer></script>
