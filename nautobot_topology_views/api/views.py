@@ -199,7 +199,7 @@ class TopologyMutationViewSet(ViewSet):
         return Response({"id": str(device.pk), "name": device.name, "display": str(device)})
 
     @action(detail=False, methods=["post"], url_path="quick-cable")
-    def quick_cable(self, request):
+    def quick_cable(self, request):  # pylint: disable=too-many-return-statements
         """Create a cable between two interfaces using the default Connected cable status."""
         if not request.user.has_perm("dcim.add_cable"):
             return Response({"detail": "You do not have permission to add cables."}, status=403)
