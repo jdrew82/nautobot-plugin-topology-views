@@ -1,0 +1,1 @@
+Fixed an error when merging `topology_include` devices with filtered querysets that use `.distinct()`.

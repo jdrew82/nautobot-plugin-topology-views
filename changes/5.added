@@ -1,0 +1,5 @@
+Added an "Add device" modal on the topology view to include existing devices or create new ones from the diagram.
+Added optional cable creation when adding a device via the topology modal.
+Added a `topology-data` API endpoint to refresh the topology graph without a full page reload.
+Added `topology-mutation` API endpoints (`quick-device`, `quick-cable`) for creating devices and cables from the topology UI.
+Added `topology_include` query parameter support to merge additional devices into the filtered topology queryset.
