@@ -1,0 +1,90 @@
+{% load perms %}
+<div class="modal fade" id="topologyAddDeviceModal" tabindex="-1" aria-labelledby="topologyAddDeviceModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="topologyAddDeviceModalLabel">Add device to topology</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="topology-add-alert" class="alert alert-danger d-none" role="alert"></div>
+        <ul class="nav nav-tabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="topology-tab-existing" data-bs-toggle="tab" data-bs-target="#topology-pane-existing" type="button" role="tab" aria-controls="topology-pane-existing" aria-selected="true">Existing device</button>
+          </li>
+          {% if perms.dcim.add_device %}
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="topology-tab-new" data-bs-toggle="tab" data-bs-target="#topology-pane-new" type="button" role="tab" aria-controls="topology-pane-new" aria-selected="false">New device</button>
+          </li>
+          {% endif %}
+        </ul>
+        <div class="tab-content border border-top-0 p-3 rounded-bottom">
+          <div class="tab-pane fade show active" id="topology-pane-existing" role="tabpanel" aria-labelledby="topology-tab-existing">
+            <label class="form-label" for="topology-existing-search">Search devices</label>
+            <div class="input-group input-group-sm mb-2">
+              <input type="search" class="form-control" id="topology-existing-search" placeholder="Name contains…" autocomplete="off" {% if not perms.dcim.view_device %}disabled{% endif %}>
+              <button type="button" class="btn btn-outline-secondary" id="topology-existing-search-run">Search</button>
+            </div>
+            <div class="topology-add-results list-group small mb-0" id="topology-existing-results" style="max-height: 12rem; overflow-y: auto;"></div>
+            <p class="form-text mb-0 mt-2" id="topology-existing-selected" aria-live="polite"></p>
+          </div>
+          {% if perms.dcim.add_device %}
+          <div class="tab-pane fade" id="topology-pane-new" role="tabpanel" aria-labelledby="topology-tab-new">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label" for="topology-new-name">Name</label>
+                <input type="text" class="form-control form-control-sm" id="topology-new-name" autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="topology-new-dt-search">Device type</label>
+                <input type="search" class="form-control form-control-sm" id="topology-new-dt-search" placeholder="Search…" autocomplete="off">
+                <select class="form-select form-select-sm mt-1" id="topology-new-device-type" size="4"></select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="topology-new-role-search">Role</label>
+                <input type="search" class="form-control form-control-sm" id="topology-new-role-search" placeholder="Search…" autocomplete="off">
+                <select class="form-select form-select-sm mt-1" id="topology-new-role" size="4"></select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="topology-new-loc-search">Location</label>
+                <input type="search" class="form-control form-control-sm" id="topology-new-loc-search" placeholder="Search…" autocomplete="off">
+                <select class="form-select form-select-sm mt-1" id="topology-new-location" size="4"></select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="topology-new-status">Status</label>
+                <select class="form-select form-select-sm" id="topology-new-status"></select>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <hr class="my-3">
+        <h6 class="mb-2">Connection (optional)</h6>
+        <p class="small text-muted">Create a cable between an interface on a device already on the diagram and an interface on the device you are adding. Requires <strong>Show cables</strong> in filters (we turn it on when you save a cable).</p>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label" for="topology-conn-canvas-device">On diagram</label>
+            <select class="form-select form-select-sm" id="topology-conn-canvas-device"><option value="">—</option></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="topology-conn-canvas-iface">Its interface</label>
+            <select class="form-select form-select-sm" id="topology-conn-canvas-iface" disabled><option value="">—</option></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="topology-conn-target-iface">New / selected device interface</label>
+            <select class="form-select form-select-sm" id="topology-conn-target-iface" disabled><option value="">—</option></select>
+          </div>
+        </div>
+        {% if not perms.dcim.add_cable %}
+        <p class="small text-warning mb-0 mt-2">You cannot save cables (permission: dcim.add_cable).</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-outline-primary" id="topology-add-apply-session" title="Include this device in the diagram until you leave the page (not saved in the address bar)">Add to diagram (session only)</button>
+        <button type="button" class="btn btn-outline-primary" id="topology-add-apply-url" title="Append device id to the page URL so Refresh and bookmarks keep it">Add to diagram (update URL)</button>
+        <button type="button" class="btn btn-primary" id="topology-add-save-nautobot" title="Create device in inventory if needed, optionally create cable, then refresh the diagram">Save to Nautobot &amp; refresh</button>
+      </div>
+    </div>
+  </div>
+</div>

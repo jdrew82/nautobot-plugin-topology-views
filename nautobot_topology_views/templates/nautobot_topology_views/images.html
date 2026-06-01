@@ -43,6 +43,7 @@
 {% block javascript %}
 <script type="text/javascript">
   const basePath = '{{ basepath }}';
+  window.topologyPluginApiBasePath = '{{ topology_plugin_api_base }}';
 </script>
 <script src="{% static 'nautobot_topology_views/js/images.js' %}" defer></script>
 {% endblock javascript %}
